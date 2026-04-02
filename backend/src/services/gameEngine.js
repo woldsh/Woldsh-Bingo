@@ -8,13 +8,25 @@
  * - Atomic winner selection with race condition protection
  * - Real-time WebSocket broadcasting to all connected players
  * - Dynamic Derash (prize pool) calculation
+ * 
+ * IMPORTANT: Uses chained setTimeout (not setInterval) to prevent
+ * overlapping ticks that could cause multiple winners.
  */
 
 const prisma = require('../lib/prisma');
-const { callNumber, getLetterForNumber, checkAllPatterns, getMatchingNumbers } = require('./bingo');
+const { callNumber, getLetterForNumber, checkAllPatterns, getMatchingNumbers, PATTERN_PRIORITY } = require('./bingo');
 
 // Track active game loops to prevent duplicates
-const activeGames = new Map(); // gameId -> intervalId
+// gameId -> timeoutId (using setTimeout, NOT setInterval)
+const activeGames = new Map();
+
+// In-memory lock: prevents concurrent processing of the same game
+// This is the PRIMARY guard against two winners
+const processingGames = new Set();
+
+// Games that have been won (in-memory flag, checked BEFORE any DB read)
+// This is set synchronously the instant a winner is detected
+const finishedGames = new Set();
 
 // Reference to Socket.IO instance (set from server.js)
 let ioInstance = null;
@@ -37,7 +49,8 @@ function calculateDerash(playerCount, stake, totalCards = null) {
 
 /**
  * Start the server-side game loop for a game
- * This is called when a game transitions from 'waiting' to 'playing'
+ * Uses chained setTimeout to guarantee sequential tick execution.
+ * Each tick FULLY completes before the next one is scheduled.
  */
 async function startGameLoop(gameId) {
     // Prevent double-starting
@@ -46,40 +59,92 @@ async function startGameLoop(gameId) {
         return;
     }
 
+    // Clear any stale finished flag (new game with same ID)
+    finishedGames.delete(gameId);
+
     console.log(`[GameEngine] 🎮 Starting game loop for game #${gameId}`);
 
-    // Call the first number immediately
-    await callAndProcess(gameId);
+    // Mark as active immediately with a placeholder
+    activeGames.set(gameId, 'starting');
 
-    // Then call numbers every 3 seconds
-    const intervalId = setInterval(async () => {
+    // Process first tick immediately (awaited - blocks until complete)
+    const shouldContinue = await callAndProcess(gameId);
+
+    if (shouldContinue) {
+        // Schedule next tick only after the first one fully completed
+        scheduleNextTick(gameId);
+    } else {
+        // Game ended on first tick (very unlikely but possible)
+        activeGames.delete(gameId);
+        processingGames.delete(gameId);
+        console.log(`[GameEngine] 🛑 Game #${gameId} ended on first tick`);
+    }
+}
+
+/**
+ * Schedule the next game tick using setTimeout.
+ * The callback awaits callAndProcess, ensuring no overlap.
+ */
+function scheduleNextTick(gameId) {
+    const timeoutId = setTimeout(async () => {
         const shouldContinue = await callAndProcess(gameId);
-        if (!shouldContinue) {
-            stopGameLoop(gameId);
+        if (shouldContinue) {
+            // Chain the next tick — only runs AFTER this one fully completes
+            scheduleNextTick(gameId);
+        } else {
+            // Game ended — clean up
+            activeGames.delete(gameId);
+            processingGames.delete(gameId);
+            console.log(`[GameEngine] 🛑 Game loop ended for game #${gameId}`);
         }
     }, 3000);
 
-    activeGames.set(gameId, intervalId);
+    activeGames.set(gameId, timeoutId);
 }
 
 /**
  * Stop a game loop
  */
 function stopGameLoop(gameId) {
-    const intervalId = activeGames.get(gameId);
-    if (intervalId) {
-        clearInterval(intervalId);
-        activeGames.delete(gameId);
-        console.log(`[GameEngine] 🛑 Stopped game loop for game #${gameId}`);
+    const timeoutId = activeGames.get(gameId);
+    if (timeoutId && timeoutId !== 'starting') {
+        clearTimeout(timeoutId);
     }
+    activeGames.delete(gameId);
+    processingGames.delete(gameId);
+    finishedGames.add(gameId); // Mark as finished to block any in-flight ticks
+    console.log(`[GameEngine] 🛑 Stopped game loop for game #${gameId}`);
 }
 
 /**
  * Core game tick: call a number, auto-mark, check for winners
  * Returns false if the game should stop (winner found or all numbers called)
+ * 
+ * CRITICAL: This function is protected by an in-memory lock.
+ * Only ONE tick can run at a time per game.
  */
 async function callAndProcess(gameId) {
+    // ===== GUARD 1: In-memory finished flag (instant, no DB read) =====
+    if (finishedGames.has(gameId)) {
+        console.log(`[GameEngine] Game #${gameId} already finished (in-memory flag), skipping tick`);
+        return false;
+    }
+
+    // ===== GUARD 2: In-memory lock (prevents concurrent ticks) =====
+    if (processingGames.has(gameId)) {
+        console.log(`[GameEngine] Game #${gameId} is being processed by another tick, skipping`);
+        return false;
+    }
+
+    // Acquire lock
+    processingGames.add(gameId);
+
     try {
+        // ===== GUARD 3: Re-check finished flag after acquiring lock =====
+        if (finishedGames.has(gameId)) {
+            return false;
+        }
+
         // Fetch fresh game state
         const game = await prisma.game.findUnique({
             where: { id: gameId },
@@ -94,12 +159,14 @@ async function callAndProcess(gameId) {
 
         if (!game) {
             console.log(`[GameEngine] Game #${gameId} not found, stopping`);
+            finishedGames.add(gameId);
             return false;
         }
 
-        // Only process active games
+        // ===== GUARD 4: DB status check =====
         if (game.status !== 'playing') {
             console.log(`[GameEngine] Game #${gameId} status is ${game.status}, stopping`);
+            finishedGames.add(gameId);
             return false;
         }
 
@@ -107,6 +174,7 @@ async function callAndProcess(gameId) {
         const nextNum = callNumber(game.calledNums);
         if (nextNum === null) {
             console.log(`[GameEngine] All 75 numbers called in game #${gameId}, ending with no winner`);
+            finishedGames.add(gameId); // Mark finished IMMEDIATELY
             await prisma.game.update({
                 where: { id: gameId },
                 data: { status: 'finished' }
@@ -136,8 +204,8 @@ async function callAndProcess(gameId) {
             calledCount: newCalledNums.length,
         });
 
-        // Auto-mark all player cards and check for winners
-        let winnerFound = null;
+        // Auto-mark all player cards and collect ALL potential winners
+        const potentialWinners = [];
 
         for (const player of game.players) {
             // === Card 1 ===
@@ -151,14 +219,15 @@ async function callAndProcess(gameId) {
 
             // Check card 1 for win
             const result1 = checkAllPatterns(player.card, card1Matches);
-            if (result1.won && !winnerFound) {
-                winnerFound = {
+            if (result1.won) {
+                potentialWinners.push({
                     player,
                     cardIndex: 0,
                     pattern: result1.pattern,
                     detail: result1.detail,
                     markedNums: card1Matches,
-                };
+                    priority: PATTERN_PRIORITY[result1.pattern] || 999,
+                });
             }
 
             // === Card 2 (if exists) ===
@@ -172,14 +241,15 @@ async function callAndProcess(gameId) {
                 }
 
                 const result2 = checkAllPatterns(player.card2, card2Matches);
-                if (result2.won && !winnerFound) {
-                    winnerFound = {
+                if (result2.won) {
+                    potentialWinners.push({
                         player,
                         cardIndex: 1,
                         pattern: result2.pattern,
                         detail: result2.detail,
                         markedNums: card2Matches,
-                    };
+                        priority: PATTERN_PRIORITY[result2.pattern] || 999,
+                    });
                 }
             }
         }
@@ -190,9 +260,24 @@ async function callAndProcess(gameId) {
             calledCount: newCalledNums.length,
         });
 
-        // If a winner was found, process the win
-        if (winnerFound) {
-            return await processWinner(game, winnerFound, newCalledNums);
+        // If potential winners were found, select THE ONE winner
+        if (potentialWinners.length > 0) {
+            // ===== IMMEDIATELY mark game as finished in-memory =====
+            // This blocks any future ticks BEFORE we even hit the database
+            finishedGames.add(gameId);
+
+            // Select winner by highest pattern priority (lowest number = highest priority)
+            // If tied on pattern priority, first player in the array wins (server order)
+            potentialWinners.sort((a, b) => a.priority - b.priority);
+            const winner = potentialWinners[0];
+
+            if (potentialWinners.length > 1) {
+                console.log(`[GameEngine] ⚠️ Multiple potential winners in game #${gameId} on same tick!`);
+                console.log(`[GameEngine]    Candidates: ${potentialWinners.map(w => `${w.player.user?.firstName || 'Player'}(${w.pattern}:P${w.priority})`).join(', ')}`);
+                console.log(`[GameEngine]    Selected winner: ${winner.player.user?.firstName || 'Player'} with ${winner.pattern} (priority ${winner.priority})`);
+            }
+
+            return await processWinner(game, winner, newCalledNums);
         }
 
         return true; // Continue the loop
@@ -200,12 +285,20 @@ async function callAndProcess(gameId) {
     } catch (error) {
         console.error(`[GameEngine] Error in game #${gameId} tick:`, error);
         return true; // Continue despite error (don't crash the loop)
+    } finally {
+        // Release the lock (unless game is finished)
+        if (!finishedGames.has(gameId)) {
+            processingGames.delete(gameId);
+        }
     }
 }
 
 /**
  * Process a winner - atomic transaction to prevent race conditions
  * Returns false to stop the game loop
+ * 
+ * IMPORTANT: finishedGames.add(gameId) is called BEFORE this function
+ * so no new ticks can start even if this transaction takes time.
  */
 async function processWinner(game, winnerData, calledNums) {
     const { player, cardIndex, pattern, detail } = winnerData;
@@ -226,20 +319,26 @@ async function processWinner(game, winnerData, calledNums) {
         console.log(`[GameEngine]    Player: ${winnerName} (ID: ${userId})`);
         console.log(`[GameEngine]    Pattern: ${detail}`);
         console.log(`[GameEngine]    Derash: ${derash} ETB`);
+        console.log(`[GameEngine]    Server time: ${new Date().toISOString()}`);
 
         // Atomic transaction: verify game is still playing, then lock it
         await prisma.$transaction(async (tx) => {
             // Re-check game status inside transaction to prevent race conditions
+            // This is a SECONDARY guard — the primary guard is the in-memory finishedGames Set
             const freshGame = await tx.game.findUnique({
                 where: { id: gameId },
-                select: { status: true }
+                select: { status: true, winnerId: true }
             });
 
             if (freshGame.status !== 'playing') {
-                throw new Error('Game already finished (race condition prevented)');
+                throw new Error('RACE_CONDITION: Game already finished');
             }
 
-            // 1. Mark game as finished
+            if (freshGame.winnerId) {
+                throw new Error('RACE_CONDITION: Game already has a winner');
+            }
+
+            // 1. Mark game as finished with winner
             await tx.game.update({
                 where: { id: gameId },
                 data: {
@@ -289,12 +388,15 @@ async function processWinner(game, winnerData, calledNums) {
                         calledCount: calledNums.length,
                         autoDetected: true,
                         timestamp: new Date().toISOString(),
+                        serverTickLock: true, // Indicates single-winner enforcement was active
                     }
                 }
             });
         });
 
-        // Broadcast winner to all players
+        console.log(`[GameEngine] ✅ Winner processed successfully for game #${gameId}`);
+
+        // Broadcast winner to all players (ONLY after successful transaction)
         broadcast(gameId, 'game_won', {
             gameId,
             winnerId: userId,
@@ -318,10 +420,10 @@ async function processWinner(game, winnerData, calledNums) {
         return false; // Stop the loop
 
     } catch (error) {
-        if (error.message.includes('race condition')) {
-            console.log(`[GameEngine] Race condition prevented in game #${gameId}`);
+        if (error.message.includes('RACE_CONDITION')) {
+            console.log(`[GameEngine] 🛡️ Race condition prevented in game #${gameId}: ${error.message}`);
         } else {
-            console.error(`[GameEngine] Error processing winner in game #${gameId}:`, error);
+            console.error(`[GameEngine] ❌ Error processing winner in game #${gameId}:`, error);
         }
         return false; // Stop the loop either way
     }
@@ -347,11 +449,15 @@ function getActiveGameCount() {
  * Stop all active game loops (for cleanup)
  */
 function stopAllGames() {
-    for (const [gameId, intervalId] of activeGames) {
-        clearInterval(intervalId);
+    for (const [gameId, timeoutId] of activeGames) {
+        if (timeoutId && timeoutId !== 'starting') {
+            clearTimeout(timeoutId);
+        }
+        finishedGames.add(gameId);
         console.log(`[GameEngine] Stopped game #${gameId}`);
     }
     activeGames.clear();
+    processingGames.clear();
 }
 
 module.exports = {
