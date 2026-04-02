@@ -1,0 +1,167 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           Int           @id @default(autoincrement())
+  telegramId   BigInt        @unique
+  username     String?
+  firstName    String?
+  lastName     String?
+  phone        String?
+  balance      Decimal       @default(0) @db.Decimal(12, 2)
+  giftBalance  Decimal       @default(0) @db.Decimal(12, 2)
+  lastActive   DateTime      @default(now())
+  status       String        @default("active") // active, banned
+  referredBy   Int?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  gamePlayers  GamePlayer[]
+  transactions Transaction[]
+  claims       Claim[]
+
+  @@map("users")
+}
+
+model Game {
+  id          Int          @id @default(autoincrement())
+  stake       Int          // 10, 20, 50
+  roomName    String       // "Weyra", "Fortune", "Buna"
+  status      String       @default("waiting") // waiting, playing, finished, cancelled
+  maxPlayers  Int          @default(1000)
+  calledNums  Int[]        @default([])
+  winnerId    Int?
+  prize       Decimal      @default(0) @db.Decimal(12, 2)
+  winPattern  String?      // "four_corners", "horizontal_line", "vertical_line", "diagonal"
+  startAt     DateTime?    // When the game should auto-start (30s after first player joins)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  players     GamePlayer[]
+  claims      Claim[]
+
+  @@map("games")
+}
+
+model GamePlayer {
+  id            Int      @id @default(autoincrement())
+  gameId        Int
+  userId        Int
+  card          Json     // 5x5 bingo card as 2D array
+  card2         Json?    // optional second bingo card
+  markedNums    Int[]    @default([])
+  markedNums2   Int[]    @default([])
+  pickedNumbers Int[]    @default([])  // 1-2 numbers picked from 1-200
+  cardCount     Int      @default(1)   // 1 or 2 cards
+  isWinner      Boolean  @default(false)
+  joinedAt      DateTime @default(now())
+
+  game       Game     @relation(fields: [gameId], references: [id])
+  user       User     @relation(fields: [userId], references: [id])
+  claims     Claim[]
+
+  @@unique([gameId, userId])
+  @@map("game_players")
+}
+
+model Claim {
+  id          Int      @id @default(autoincrement())
+  gameId      Int
+  userId      Int
+  playerId    Int      // Foreign key to GamePlayer
+  cardIndex   Int      @default(0) // 0 for first card, 1 for second
+  status      String   @default("pending") // pending, approved, rejected
+  calledNums  Int[]    // Snapshot of called numbers at time of claim
+  matchData   Json?    // Which pattern they matched, how it was verified automatically
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  game       Game       @relation(fields: [gameId], references: [id])
+  user       User       @relation(fields: [userId], references: [id])
+  player     GamePlayer @relation(fields: [playerId], references: [id])
+
+  @@map("claims")
+}
+
+model Transaction {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  type      String   // deposit, withdraw, bet, win, refund, bonus
+  amount    Decimal  @db.Decimal(12, 2)
+  status    String   @default("pending") // pending, completed, failed
+  reference String?  // payment reference / transaction ID
+  note      String?
+  createdAt DateTime @default(now())
+
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("transactions")
+}
+
+model Admin {
+  id        Int      @id @default(autoincrement())
+  username  String   @unique
+  password  String
+  role      String   @default("admin") // admin, super_admin
+  createdAt DateTime @default(now())
+
+  @@map("admins")
+}
+
+model AuditLog {
+  id          Int      @id @default(autoincrement())
+  adminId     Int
+  action      String   // e.g., 'wallet_credit', 'wallet_debit', 'wallet_lock', 'force_end_game'
+  targetType  String   // e.g., 'user', 'game', 'deposit'
+  targetId    String?
+  beforeData  String?
+  afterData   String?
+  reason      String?
+  createdAt   DateTime @default(now())
+
+  @@map("audit_logs")
+}
+
+model RoomTemplate {
+  id          Int      @id @default(autoincrement())
+  name        String   // e.g., "Silver Room", "Gold Room"
+  stake       Int      // e.g., 10, 50, 100
+  prize       Decimal  @default(0) @db.Decimal(12, 2)
+  maxPlayers  Int      @default(4)
+  theme       String   @default("blue") // blue, green, red
+  sortOrder   Int      @default(0) // lower = first
+  isActive       Boolean  @default(true)
+  isMaintenance  Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("room_templates")
+}
+
+model WinPattern {
+  id          Int      @id @default(autoincrement())
+  name        String   // "Four Corners", "Full House", "Diagonal"
+  code        String   @unique // "four_corners", "full_house"
+  cells       Json     // [[0,0],[0,4],[4,0],[4,4]] - 2D array of coordinates
+  isActive    Boolean  @default(true)
+  priority    Int      @default(0) // Higher number = higher priority
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("win_patterns")
+}
+
+model Setting {
+  key         String   @id // e.g., "maintenance_mode", "referral_bonus_amount"
+  value       String   // stored as string, parsed by app
+  description String?
+  updatedAt   DateTime @updatedAt
+
+  @@map("settings")
+}
