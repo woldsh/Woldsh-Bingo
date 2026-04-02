@@ -200,7 +200,7 @@ export default function HomePage() {
                   <span className="badge badge-maintenance">MAINTENANCE</span>
                 ) : (
                   <span className={`badge ${room.status === 'waiting' ? 'badge-waiting' : 'badge-playing'}`}>
-                    {room.status === 'waiting' ? 'WAITING' : 'PLAYING'}
+                    {room.status === 'waiting' ? 'WAITING' : 'GAME STARTED'}
                   </span>
                 )}
                 <button

@@ -443,30 +443,51 @@ router.delete('/admins/:id', adminAuthMiddleware, requireSuperAdmin, async (req,
 });
 
 // =============================================
-// Platform Settings (Cached in Redis if available)
+// Platform Settings (Database-backed via Setting model)
 // =============================================
 
 const DEFAULT_SETTINGS = {
+    maintenanceMode: 'false',
+    minWithdrawal: '100',
+    maxWithdrawal: '10000',
+    minDeposit: '10',
+    referralBonus: '50',
+    welcomeBonus: '10',
+    houseFeePercent: '20',
+    numberCallInterval: '3',
+    minPlayersToStart: '2',
+    waitingTimeSeconds: '30',
+    maxCardsPerPlayer: '2',
+    botAnnouncements: '',
+    supportContact: '@woldsh_support',
     platformName: 'Woldsh Bingo',
     currency: 'ETB',
-    feePercentage: 10,
-    maintenanceMode: false,
-    minWithdrawal: 50,
-    supportContact: '@woldsh_support'
 };
+
+// Seed default settings into DB if they don't exist
+async function seedDefaultSettings() {
+    for (const [key, value] of Object.entries(DEFAULT_SETTINGS)) {
+        await prisma.setting.upsert({
+            where: { key },
+            update: {},  // Don't overwrite existing values
+            create: { key, value, description: key.replace(/([A-Z])/g, ' $1').trim() }
+        });
+    }
+}
 
 // Get current settings
 router.get('/settings', adminAuthMiddleware, async (req, res) => {
     try {
-        let settings = null;
-        if (redisClient) {
-            const cached = await redisClient.get('platform_settings');
-            if (cached) settings = JSON.parse(cached);
-        }
+        // Ensure defaults exist
+        await seedDefaultSettings();
 
-        // For this iteration we simulate fetching from db by just returning defaults or cached
-        // In reality you would have a Prisma model for this, but using Redis mainly covers the sync requirement
-        settings = settings || DEFAULT_SETTINGS;
+        const dbSettings = await prisma.setting.findMany();
+        
+        // Convert array of {key, value} to flat object
+        const settings = {};
+        for (const s of dbSettings) {
+            settings[s.key] = s.value;
+        }
 
         res.json(settings);
     } catch (error) {
@@ -476,26 +497,44 @@ router.get('/settings', adminAuthMiddleware, async (req, res) => {
 });
 
 // Update settings
-router.post('/settings', adminAuthMiddleware, requireSuperAdmin, async (req, res) => {
+router.post('/settings', adminAuthMiddleware, async (req, res) => {
     try {
         const updates = req.body;
+        const adminId = req.admin?.id;
 
-        let currentSettings = DEFAULT_SETTINGS;
-        if (redisClient) {
-            const cached = await redisClient.get('platform_settings');
-            if (cached) currentSettings = JSON.parse(cached);
+        // Upsert each setting key-value pair into the database
+        for (const [key, value] of Object.entries(updates)) {
+            if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+                await prisma.setting.upsert({
+                    where: { key },
+                    update: { value: String(value) },
+                    create: { key, value: String(value), description: key.replace(/([A-Z])/g, ' $1').trim() }
+                });
+            }
         }
 
-        const newSettings = { ...currentSettings, ...updates };
-
-        // Save to Redis
-        if (redisClient) {
-            await redisClient.set('platform_settings', JSON.stringify(newSettings));
+        // Log the settings change
+        if (adminId) {
+            await prisma.auditLog.create({
+                data: {
+                    adminId,
+                    action: 'UPDATE_SETTINGS',
+                    targetType: 'settings',
+                    targetId: Object.keys(updates).join(','),
+                    afterData: JSON.stringify(updates),
+                    reason: 'Admin updated global settings'
+                }
+            });
         }
 
-        // Note: You would typically also save to DB here (`prisma.setting.upsert`...)
+        // Fetch all settings fresh from DB to return
+        const dbSettings = await prisma.setting.findMany();
+        const settings = {};
+        for (const s of dbSettings) {
+            settings[s.key] = s.value;
+        }
 
-        res.json({ success: true, settings: newSettings });
+        res.json({ success: true, settings });
     } catch (error) {
         console.error('Error updating settings:', error);
         res.status(500).json({ error: 'Failed to update settings' });

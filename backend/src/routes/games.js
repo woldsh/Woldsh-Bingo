@@ -114,17 +114,18 @@ router.get('/', async (req, res) => {
                 continue;
             }
 
+            // Look for an active game (playing first, then waiting)
             let game = await prisma.game.findFirst({
                 where: {
                     stake: template.stake,
-                    status: 'waiting',
+                    status: { in: ['playing', 'waiting'] },
                 },
                 include: {
                     players: {
                         select: { id: true, userId: true, pickedNumbers: true, cardCount: true }
                     }
                 },
-                orderBy: { createdAt: 'desc' }
+                orderBy: [{ status: 'asc' }, { createdAt: 'desc' }]
             });
 
             if (!game) {
@@ -145,7 +146,7 @@ router.get('/', async (req, res) => {
                     }
                 });
                 scheduleGameStart(game.id, newStartAt);
-            } else {
+            } else if (game.status === 'waiting') {
                 scheduleGameStart(game.id, game.startAt);
             }
 
@@ -237,7 +238,30 @@ router.post('/:id/join', authMiddleware, async (req, res) => {
         }
 
         if (game.status !== 'waiting') {
-            return res.status(400).json({ error: 'The game has already started. Wait for the next round to join.' });
+            // Game already started — find or create a new waiting game for the same stake
+            let newGame = await prisma.game.findFirst({
+                where: { stake: game.stake, status: 'waiting' },
+                orderBy: { createdAt: 'desc' }
+            });
+
+            if (!newGame) {
+                const newStartAt = new Date(Date.now() + 30000);
+                newGame = await prisma.game.create({
+                    data: {
+                        stake: game.stake,
+                        roomName: game.roomName,
+                        maxPlayers: game.maxPlayers,
+                        prize: 0,
+                        startAt: newStartAt,
+                    }
+                });
+                scheduleGameStart(newGame.id, newStartAt);
+            }
+
+            return res.status(400).json({
+                error: 'The game has already started. Redirecting to new game...',
+                redirectGameId: newGame.id,
+            });
         }
 
         if (game.players.length >= game.maxPlayers) {

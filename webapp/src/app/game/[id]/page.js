@@ -425,13 +425,22 @@ export default function GamePage() {
                     if (walletData.balance !== undefined) {
                         setWalletBalance(Number(walletData.balance));
                     }
-                } catch {}
+                } catch { }
             }
             if (data.error) {
                 setErrorMsg(data.error);
                 setTimeout(() => setErrorMsg(''), 3000);
             }
         } catch (err) {
+            // If game already started, redirect to new game
+            if (err.data && err.data.redirectGameId) {
+                setErrorMsg('Game already started. Redirecting to new game...');
+                setTimeout(() => {
+                    router.push(`/game/${err.data.redirectGameId}`);
+                }, 1000);
+                setJoining(false);
+                return;
+            }
             setErrorMsg(err.message || 'Failed to join game');
             setTimeout(() => setErrorMsg(''), 3000);
         }
