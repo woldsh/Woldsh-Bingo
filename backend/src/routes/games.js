@@ -89,13 +89,9 @@ router.get('/', async (req, res) => {
             orderBy: [{ sortOrder: 'asc' }, { stake: 'asc' }]
         });
 
-        // Fallback for first-run or if no templates defined
+        // If no templates defined in admin, return empty rooms
         if (templates.length === 0) {
-            templates = [
-                { name: 'Weyra', stake: 10, maxPlayers: 1000, prize: 0, theme: 'blue', isMaintenance: false },
-                { name: 'Fortune', stake: 20, maxPlayers: 1000, prize: 0, theme: 'green', isMaintenance: false },
-                { name: 'Buna', stake: 50, maxPlayers: 1000, prize: 0, theme: 'red', isMaintenance: false },
-            ];
+            return res.json({ rooms: [] });
         }
 
         for (const template of templates) {

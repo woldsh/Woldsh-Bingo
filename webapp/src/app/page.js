@@ -6,18 +6,13 @@ import Image from 'next/image';
 import BottomNav from '@/components/BottomNav';
 import { expandWebApp, hapticFeedback, getTelegramWebApp } from '@/lib/telegram';
 
-// Demo data for when API is not connected
-const DEMO_ROOMS = [
-  { id: 1, stake: 10, roomName: 'Weyra', status: 'waiting', playerCount: 2, maxPlayers: 1000, prize: 0, derash: 0, theme: 'blue' },
-  { id: 2, stake: 20, roomName: 'Fortune', status: 'waiting', playerCount: 0, maxPlayers: 1000, prize: 0, derash: 0, theme: 'green' },
-  { id: 3, stake: 50, roomName: 'Buna', status: 'waiting', playerCount: 1, maxPlayers: 1000, prize: 0, derash: 0, theme: 'red' },
-];
+
 
 export default function HomePage() {
   const router = useRouter();
-  const [rooms, setRooms] = useState(DEMO_ROOMS);
+  const [rooms, setRooms] = useState([]);
   const [showRules, setShowRules] = useState(false);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [needsPhone, setNeedsPhone] = useState(false);
 
   useEffect(() => {
@@ -71,7 +66,9 @@ export default function HomePage() {
       const data = await gamesApi.list();
       if (data.rooms) setRooms(data.rooms);
     } catch {
-      // Use demo data
+      // API not available
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -148,55 +145,78 @@ export default function HomePage() {
       </div>
 
       <div className="stake-cards">
-        {rooms.map((room) => (
-          <div
-            key={room.id || `maintenance-${room.stake}`}
-            className={`stake-card stake-card-${room.theme || 'blue'} ${room.isMaintenance ? 'stake-card-maintenance' : ''}`}
-            onClick={() => handlePlay(room)}
-            style={room.isMaintenance ? { opacity: 0.7, cursor: 'default' } : {}}
-          >
-            <div className="stake-info">
-              <div className="stake-amount">{room.stake} ETB</div>
-              <div className="stake-name">{room.roomName}</div>
-              {!room.isMaintenance && (
-                <>
-                  <div className="player-count">
-                    {room.playerCount} player{room.playerCount !== 1 ? 's' : ''} joined
-                  </div>
-                  <div style={{
-                    fontSize: '14px',
-                    color: (room.derash || room.prize) > 0 ? '#10b981' : '#64748b',
-                    marginTop: 4,
-                    fontWeight: '800',
-                    textShadow: (room.derash || room.prize) > 0 ? '0 0 10px rgba(16,185,129,0.3)' : 'none',
-                    letterSpacing: '0.5px'
-                  }}>
-                    Derash: {room.derash || room.prize || 0} ETB
-                  </div>
-                </>
-              )}
+        {loading ? (
+          /* Loading skeleton - shows while rooms are being fetched */
+          [1, 2, 3].map((i) => (
+            <div key={`skeleton-${i}`} className="stake-card stake-card-blue" style={{ opacity: 0.4, animation: 'pulse 1.5s ease-in-out infinite' }}>
+              <div className="stake-info">
+                <div style={{ width: '80px', height: '28px', background: 'rgba(255,255,255,0.1)', borderRadius: '8px' }}></div>
+                <div style={{ width: '60px', height: '16px', background: 'rgba(255,255,255,0.08)', borderRadius: '6px', marginTop: '8px' }}></div>
+                <div style={{ width: '120px', height: '14px', background: 'rgba(255,255,255,0.06)', borderRadius: '6px', marginTop: '8px' }}></div>
+              </div>
+              <div className="stake-actions">
+                <div style={{ width: '70px', height: '26px', background: 'rgba(255,255,255,0.08)', borderRadius: '12px' }}></div>
+                <div style={{ width: '60px', height: '36px', background: 'rgba(255,255,255,0.1)', borderRadius: '10px', marginTop: '8px' }}></div>
+              </div>
             </div>
-            <div className="stake-actions">
-              {room.isMaintenance ? (
-                <span className="badge badge-maintenance">MAINTENANCE</span>
-              ) : (
-                <span className={`badge ${room.status === 'waiting' ? 'badge-waiting' : 'badge-playing'}`}>
-                  {room.status === 'waiting' ? 'WAITING' : 'PLAYING'}
-                </span>
-              )}
-              <button
-                className={`btn-play ${room.isMaintenance ? 'btn-play-disabled' : ''}`}
-                disabled={room.isMaintenance}
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handlePlay(room);
-                }}
-              >
-                PLAY
-              </button>
-            </div>
+          ))
+        ) : rooms.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8' }}>
+            <div style={{ fontSize: '40px', marginBottom: '12px' }}>🎮</div>
+            <div style={{ fontSize: '16px', fontWeight: '700' }}>No rooms available</div>
+            <div style={{ fontSize: '13px', marginTop: '6px', color: '#64748b' }}>Please check back later</div>
           </div>
-        ))}
+        ) : (
+          rooms.map((room) => (
+            <div
+              key={room.id || `maintenance-${room.stake}`}
+              className={`stake-card stake-card-${room.theme || 'blue'} ${room.isMaintenance ? 'stake-card-maintenance' : ''}`}
+              onClick={() => handlePlay(room)}
+              style={room.isMaintenance ? { opacity: 0.7, cursor: 'default' } : {}}
+            >
+              <div className="stake-info">
+                <div className="stake-amount">{room.stake} ETB</div>
+                <div className="stake-name">{room.roomName}</div>
+                {!room.isMaintenance && (
+                  <>
+                    <div className="player-count">
+                      {room.playerCount} player{room.playerCount !== 1 ? 's' : ''} joined
+                    </div>
+                    <div style={{
+                      fontSize: '14px',
+                      color: (room.derash || room.prize) > 0 ? '#10b981' : '#64748b',
+                      marginTop: 4,
+                      fontWeight: '800',
+                      textShadow: (room.derash || room.prize) > 0 ? '0 0 10px rgba(16,185,129,0.3)' : 'none',
+                      letterSpacing: '0.5px'
+                    }}>
+                      Derash: {room.derash || room.prize || 0} ETB
+                    </div>
+                  </>
+                )}
+              </div>
+              <div className="stake-actions">
+                {room.isMaintenance ? (
+                  <span className="badge badge-maintenance">MAINTENANCE</span>
+                ) : (
+                  <span className={`badge ${room.status === 'waiting' ? 'badge-waiting' : 'badge-playing'}`}>
+                    {room.status === 'waiting' ? 'WAITING' : 'PLAYING'}
+                  </span>
+                )}
+                <button
+                  className={`btn-play ${room.isMaintenance ? 'btn-play-disabled' : ''}`}
+                  disabled={room.isMaintenance}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handlePlay(room);
+                  }}
+                >
+                  PLAY
+                </button>
+              </div>
+            </div>
+          ))
+        )}
       </div>
 
       {/* Rules Modal */}
