@@ -76,10 +76,77 @@
   --gradient-primary: linear-gradient(135deg, #14b8a6 0%, #0d9488 100%);
   --gradient-gold: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
 
+  /* Metallic Gradients */
+  --metallic-blue: linear-gradient(180deg, #1e40af 0%, #1e3a8a 50%, #172554 100%);
+  --metallic-red: linear-gradient(180deg, #991b1b 0%, #7f1d1d 50%, #450a0a 100%);
+  --metallic-navy: linear-gradient(180deg, #1e1b4b 0%, #0f172a 50%, #020617 100%);
+  --metallic-silver: linear-gradient(180deg, #94a3b8 0%, #64748b 50%, #334155 100%);
+  --metallic-green: linear-gradient(180deg, #10b981 0%, #047857 50%, #064e3b 100%);
+  --gold-border: linear-gradient(135deg, #fef3c7 0%, #fbbf24 50%, #d97706 100%);
+
   /* Shadows */
   --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.5);
   --shadow-glow: 0 0 20px rgba(20, 184, 166, 0.2);
   --shadow-gold-glow: 0 0 20px rgba(245, 158, 11, 0.25);
+  --shadow-bezel: inset 0 2px 4px rgba(255, 255, 255, 0.2), inset 0 -2px 4px rgba(0, 0, 0, 0.5), 0 4px 10px rgba(0, 0, 0, 0.4);
+}
+
+/* Casino Utility Classes */
+.gold-bezel {
+  border: 3px solid #fbbf24;
+  border-image: var(--gold-border) 1;
+  box-shadow: var(--shadow-bezel);
+}
+
+.text-metallic-gold {
+  background: var(--gold-border);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.btn-metallic {
+  padding: 8px 24px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  font-weight: 800;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  box-shadow: var(--shadow-bezel);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-metallic-silver {
+  background: var(--metallic-silver);
+  color: #f1f5f9;
+  border-color: #94a3b8;
+}
+
+.btn-metallic-green {
+  background: var(--metallic-green);
+  color: #fff;
+  border-color: #34d399;
+}
+
+.btn-metallic:hover {
+  filter: brightness(1.1);
+  transform: translateY(-1px);
+}
+
+.btn-metallic:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 5px rgba(0, 0, 0, 0.5);
+}
+
+.header-metallic {
+  background: linear-gradient(90deg, #1e3a8a 0%, #1e1b4b 100%);
+  border-bottom: 2px solid #fbbf24 !important;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
 }
 
 * {
@@ -223,7 +290,7 @@ body {
   left: -200%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(110deg, transparent 20%, rgba(255,255,255,0.4) 40%, rgba(255,255,255,0.6) 50%, rgba(255,255,255,0.1) 60%, transparent 80%);
+  background: linear-gradient(110deg, transparent 20%, rgba(255, 255, 255, 0.4) 40%, rgba(255, 255, 255, 0.6) 50%, rgba(255, 255, 255, 0.1) 60%, transparent 80%);
   transform: skewX(-20deg);
   transition: all 0.6s cubic-bezier(0.25, 0.8, 0.25, 1);
   z-index: 0;
@@ -232,7 +299,7 @@ body {
 
 .stake-card:hover {
   transform: translateY(-4px);
-  border-color: rgba(255,255,255,0.8);
+  border-color: rgba(255, 255, 255, 0.8);
 }
 
 .stake-card:hover::after {
@@ -240,9 +307,10 @@ body {
   transition: left 0.9s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-.stake-card-blue, .stake-card-1 {
-  background: 
-    linear-gradient(110deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 15%, transparent 35%, rgba(0,0,0,0.4) 100%),
+.stake-card-blue,
+.stake-card-1 {
+  background:
+    linear-gradient(110deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 15%, transparent 35%, rgba(0, 0, 0, 0.4) 100%),
     linear-gradient(135deg, #1e3a8a, #3b82f6) !important;
   border-top: 1px solid rgba(255, 255, 255, 0.5) !important;
   border-left: 1px solid rgba(255, 255, 255, 0.3) !important;
@@ -250,14 +318,17 @@ body {
   border-right: 2px solid rgba(0, 0, 0, 0.4) !important;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), inset 0 3px 6px rgba(255, 255, 255, 0.2), inset 0 -4px 8px rgba(0, 0, 0, 0.4) !important;
 }
-.stake-card-blue:hover, .stake-card-1:hover {
+
+.stake-card-blue:hover,
+.stake-card-1:hover {
   transform: translateY(-5px) !important;
   box-shadow: 0 20px 40px rgba(59, 130, 246, 0.6), inset 0 4px 8px rgba(255, 255, 255, 0.4), inset 0 -4px 8px rgba(0, 0, 0, 0.3) !important;
 }
 
-.stake-card-green, .stake-card-2 {
-  background: 
-    linear-gradient(110deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 15%, transparent 35%, rgba(0,0,0,0.4) 100%),
+.stake-card-green,
+.stake-card-2 {
+  background:
+    linear-gradient(110deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 15%, transparent 35%, rgba(0, 0, 0, 0.4) 100%),
     linear-gradient(135deg, #064e3b, #10b981) !important;
   border-top: 1px solid rgba(255, 255, 255, 0.5) !important;
   border-left: 1px solid rgba(255, 255, 255, 0.3) !important;
@@ -265,14 +336,17 @@ body {
   border-right: 2px solid rgba(0, 0, 0, 0.4) !important;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), inset 0 3px 6px rgba(255, 255, 255, 0.2), inset 0 -4px 8px rgba(0, 0, 0, 0.4) !important;
 }
-.stake-card-green:hover, .stake-card-2:hover {
+
+.stake-card-green:hover,
+.stake-card-2:hover {
   transform: translateY(-5px) !important;
   box-shadow: 0 20px 40px rgba(16, 185, 129, 0.6), inset 0 4px 8px rgba(255, 255, 255, 0.4), inset 0 -4px 8px rgba(0, 0, 0, 0.3) !important;
 }
 
-.stake-card-red, .stake-card-3 {
-  background: 
-    linear-gradient(110deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 15%, transparent 35%, rgba(0,0,0,0.4) 100%),
+.stake-card-red,
+.stake-card-3 {
+  background:
+    linear-gradient(110deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 15%, transparent 35%, rgba(0, 0, 0, 0.4) 100%),
     linear-gradient(135deg, #7f1d1d, #ef4444) !important;
   border-top: 1px solid rgba(255, 255, 255, 0.5) !important;
   border-left: 1px solid rgba(255, 255, 255, 0.3) !important;
@@ -280,14 +354,16 @@ body {
   border-right: 2px solid rgba(0, 0, 0, 0.4) !important;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), inset 0 3px 6px rgba(255, 255, 255, 0.2), inset 0 -4px 8px rgba(0, 0, 0, 0.4) !important;
 }
-.stake-card-red:hover, .stake-card-3:hover {
+
+.stake-card-red:hover,
+.stake-card-3:hover {
   transform: translateY(-5px) !important;
   box-shadow: 0 20px 40px rgba(239, 68, 68, 0.6), inset 0 4px 8px rgba(255, 255, 255, 0.4), inset 0 -4px 8px rgba(0, 0, 0, 0.3) !important;
 }
 
 .stake-card-gold {
-  background: 
-    linear-gradient(110deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 15%, transparent 35%, rgba(0,0,0,0.4) 100%),
+  background:
+    linear-gradient(110deg, rgba(255, 255, 255, 0.25) 0%, rgba(255, 255, 255, 0.15) 15%, transparent 35%, rgba(0, 0, 0, 0.4) 100%),
     linear-gradient(135deg, #78350f, #f59e0b) !important;
   border-top: 1px solid rgba(255, 255, 255, 0.6) !important;
   border-left: 1px solid rgba(255, 255, 255, 0.4) !important;
@@ -295,14 +371,15 @@ body {
   border-right: 2px solid rgba(0, 0, 0, 0.4) !important;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), inset 0 3px 6px rgba(255, 255, 255, 0.3), inset 0 -4px 8px rgba(0, 0, 0, 0.4) !important;
 }
+
 .stake-card-gold:hover {
   transform: translateY(-5px) !important;
   box-shadow: 0 20px 40px rgba(245, 158, 11, 0.6), inset 0 4px 8px rgba(255, 255, 255, 0.4), inset 0 -4px 8px rgba(0, 0, 0, 0.3) !important;
 }
 
 .stake-card-purple {
-  background: 
-    linear-gradient(110deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 15%, transparent 35%, rgba(0,0,0,0.4) 100%),
+  background:
+    linear-gradient(110deg, rgba(255, 255, 255, 0.15) 0%, rgba(255, 255, 255, 0.05) 15%, transparent 35%, rgba(0, 0, 0, 0.4) 100%),
     linear-gradient(135deg, #4a044e, #a855f7) !important;
   border-top: 1px solid rgba(255, 255, 255, 0.5) !important;
   border-left: 1px solid rgba(255, 255, 255, 0.3) !important;
@@ -310,14 +387,15 @@ body {
   border-right: 2px solid rgba(0, 0, 0, 0.4) !important;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6), inset 0 3px 6px rgba(255, 255, 255, 0.2), inset 0 -4px 8px rgba(0, 0, 0, 0.4) !important;
 }
+
 .stake-card-purple:hover {
   transform: translateY(-5px) !important;
   box-shadow: 0 20px 40px rgba(168, 85, 247, 0.6), inset 0 4px 8px rgba(255, 255, 255, 0.4), inset 0 -4px 8px rgba(0, 0, 0, 0.3) !important;
 }
 
 .stake-card-slate {
-  background: 
-    linear-gradient(110deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 15%, transparent 35%, rgba(0,0,0,0.5) 100%),
+  background:
+    linear-gradient(110deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 15%, transparent 35%, rgba(0, 0, 0, 0.5) 100%),
     linear-gradient(135deg, #0f172a, #475569) !important;
   border-top: 1px solid rgba(255, 255, 255, 0.4) !important;
   border-left: 1px solid rgba(255, 255, 255, 0.2) !important;
@@ -325,6 +403,7 @@ body {
   border-right: 2px solid rgba(0, 0, 0, 0.5) !important;
   box-shadow: 0 15px 35px rgba(0, 0, 0, 0.7), inset 0 3px 6px rgba(255, 255, 255, 0.2), inset 0 -4px 8px rgba(0, 0, 0, 0.5) !important;
 }
+
 .stake-card-slate:hover {
   transform: translateY(-5px) !important;
   box-shadow: 0 20px 40px rgba(71, 85, 105, 0.6), inset 0 4px 8px rgba(255, 255, 255, 0.3), inset 0 -4px 8px rgba(0, 0, 0, 0.3) !important;
@@ -341,7 +420,7 @@ body {
   font-size: 26px;
   font-weight: 900;
   color: #fff;
-  text-shadow: 0 2px 4px rgba(0,0,0,0.6), 0 4px 8px rgba(0,0,0,0.3);
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.6), 0 4px 8px rgba(0, 0, 0, 0.3);
   letter-spacing: -0.5px;
 }
 
@@ -349,7 +428,7 @@ body {
   font-size: 14px;
   color: rgba(255, 255, 255, 0.9);
   font-weight: 600;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5);
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
@@ -440,7 +519,7 @@ body {
   color: rgba(255, 255, 255, 0.85);
   font-weight: 600;
   margin-top: 2px;
-  text-shadow: 0 1px 3px rgba(0,0,0,0.6);
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6);
 }
 
 /* Bingo Card */
@@ -477,12 +556,51 @@ body {
   cursor: pointer;
   transition: all 0.2s;
   border: 1px solid var(--border-color);
-  background: var(--bg-secondary);
+  background: rgba(255, 255, 255, 0.05);
+  /* Slightly lighter background */
+  color: var(--text-primary);
+  /* Ensure white text */
 }
 
 .bingo-cell:hover {
-  background: var(--bg-card-hover);
+  background: rgba(255, 255, 255, 0.1);
   border-color: var(--border-highlight);
+}
+
+/* Number Picking Grid Cells */
+.number-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 42px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.number-cell:hover {
+  background: rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+}
+
+.number-cell.selected {
+  background: var(--gradient-primary);
+  color: var(--bg-primary);
+  border-color: var(--accent-primary);
+  font-weight: 800;
+}
+
+.number-cell.taken {
+  background: rgba(239, 68, 68, 0.1);
+  color: #ef4444;
+  border-color: rgba(239, 68, 68, 0.3);
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 
 .bingo-cell.marked {
@@ -1467,6 +1585,10 @@ body {
   flex-direction: column;
   gap: 12px;
   text-align: left;
+  max-height: 60vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding-right: 5px;
 }
 
 .rule-item {
@@ -3552,11 +3674,27 @@ body {
 
 /* Ball bounce animation when new number is called */
 @keyframes ball-bounce-anim {
-  0% { transform: scale(0.3) translateY(-40px); opacity: 0; }
-  40% { transform: scale(1.2) translateY(0); opacity: 1; }
-  60% { transform: scale(0.9); }
-  80% { transform: scale(1.05); }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(0.3) translateY(-40px);
+    opacity: 0;
+  }
+
+  40% {
+    transform: scale(1.2) translateY(0);
+    opacity: 1;
+  }
+
+  60% {
+    transform: scale(0.9);
+  }
+
+  80% {
+    transform: scale(1.05);
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 .ball-bounce {
@@ -3565,29 +3703,65 @@ body {
 
 /* Pulse animation for countdown timer */
 @keyframes pulse {
-  0%, 100% { transform: scale(1); opacity: 1; }
-  50% { transform: scale(1.08); opacity: 0.85; }
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+
+  50% {
+    transform: scale(1.08);
+    opacity: 0.85;
+  }
 }
 
 /* Pulse glow for badges */
 @keyframes pulse-glow {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(20, 184, 166, 0.4); }
-  50% { box-shadow: 0 0 12px 4px rgba(20, 184, 166, 0.2); }
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(20, 184, 166, 0.4);
+  }
+
+  50% {
+    box-shadow: 0 0 12px 4px rgba(20, 184, 166, 0.2);
+  }
 }
 
 /* Cell highlight when number is called */
 @keyframes cell-highlight {
-  0% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.6); }
-  50% { box-shadow: 0 0 15px 5px rgba(59, 130, 246, 0.3); }
-  100% { box-shadow: none; }
+  0% {
+    box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.6);
+  }
+
+  50% {
+    box-shadow: 0 0 15px 5px rgba(59, 130, 246, 0.3);
+  }
+
+  100% {
+    box-shadow: none;
+  }
 }
 
 /* Just-marked cell pop animation */
 @keyframes just-marked-pop {
-  0% { transform: scale(1); }
-  30% { transform: scale(1.25); box-shadow: 0 0 20px rgba(16, 185, 129, 0.6); }
-  60% { transform: scale(0.95); }
-  100% { transform: scale(1.05); }
+  0% {
+    transform: scale(1);
+  }
+
+  30% {
+    transform: scale(1.25);
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.6);
+  }
+
+  60% {
+    transform: scale(0.95);
+  }
+
+  100% {
+    transform: scale(1.05);
+  }
 }
 
 .bingo-cell.just-marked {
@@ -3599,20 +3773,44 @@ body {
 
 /* Pop-in for called number chips */
 @keyframes pop-in {
-  0% { transform: scale(0); opacity: 0; }
-  60% { transform: scale(1.15); opacity: 1; }
-  100% { transform: scale(1); }
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+
+  60% {
+    transform: scale(1.15);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1);
+  }
 }
 
 /* Win overlay animations */
 @keyframes win-confetti {
-  0% { transform: translateY(0) rotate(0deg); opacity: 1; }
-  100% { transform: translateY(-100vh) rotate(720deg); opacity: 0; }
+  0% {
+    transform: translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+
+  100% {
+    transform: translateY(-100vh) rotate(720deg);
+    opacity: 0;
+  }
 }
 
 @keyframes win-pulse {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.05); }
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.05);
+  }
 }
 
 .win-overlay {
@@ -3624,20 +3822,39 @@ body {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 /* Derash value glow animation */
 @keyframes derash-glow {
-  0%, 100% { text-shadow: 0 0 20px rgba(16, 185, 129, 0.3); }
-  50% { text-shadow: 0 0 30px rgba(16, 185, 129, 0.5), 0 0 60px rgba(16, 185, 129, 0.2); }
+
+  0%,
+  100% {
+    text-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
+  }
+
+  50% {
+    text-shadow: 0 0 30px rgba(16, 185, 129, 0.5), 0 0 60px rgba(16, 185, 129, 0.2);
+  }
 }
 
 /* Auto-play indicator pulse */
 @keyframes auto-pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.6; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.6;
+  }
 }
 
 .auto-play-indicator {

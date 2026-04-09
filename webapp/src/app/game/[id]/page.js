@@ -457,67 +457,88 @@ export default function GamePage() {
             <div className="page-container obsidian-theme" style={{ paddingBottom: '20px', backgroundColor: '#0b111a', minHeight: '100vh' }}>
 
                 {/* TOP HEADER ROW: Timer & Derash */}
-                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '20px 16px 12px', gap: '20px', backgroundColor: '#0f172a' }}>
+                <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', padding: '12px 16px 8px', gap: '12px', backgroundColor: '#0f172a' }}>
                     {startAt && !isStarted && timeLeft > 0 ? (
                         <div style={{
-                            width: 72, height: 72, borderRadius: '50%',
+                            width: 60, height: 60, borderRadius: '50%',
                             background: timeLeft <= 10 ? 'linear-gradient(135deg, #dc2626, #991b1b)' : 'linear-gradient(135deg, #1e293b, #0f172a)',
                             border: timeLeft <= 10 ? '3px solid #ef4444' : '3px solid #334155',
                             display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            boxShadow: timeLeft <= 10 ? '0 0 20px rgba(239,68,68,0.4)' : '0 0 15px rgba(0,0,0,0.5)',
+                            boxShadow: timeLeft <= 10 ? '0 0 15px rgba(239,68,68,0.4)' : '0 0 10px rgba(0,0,0,0.5)',
                             animation: timeLeft <= 5 ? 'pulse 1s infinite' : 'none',
                         }}>
-                            <span style={{ fontSize: '28px', fontWeight: '900', color: '#fff' }}>{timeLeft}s</span>
+                            <span style={{ fontSize: '24px', fontWeight: '900', color: '#fff' }}>{timeLeft}s</span>
                         </div>
                     ) : (
-                        <div style={{ width: 72, height: 72, borderRadius: '50%', background: 'linear-gradient(135deg, #1e293b, #0f172a)', border: '3px solid #334155', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                            <span style={{ fontSize: '14px', color: '#64748b' }}>WAIT</span>
+                        <div style={{ width: 60, height: 60, borderRadius: '50%', background: 'linear-gradient(135deg, #1e293b, #0f172a)', border: '3px solid #334155', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            <span style={{ fontSize: '12px', color: '#64748b' }}>WAIT</span>
                         </div>
                     )}
 
                     <div style={{
                         background: 'linear-gradient(135deg, #0f172a, #1a1a2e)',
-                        border: '2px solid #334155',
-                        borderRadius: '16px',
-                        padding: '14px 36px',
-                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px',
+                        border: '1px solid #334155',
+                        borderRadius: '12px',
+                        padding: '10px 24px',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '2px',
+                        minWidth: '140px'
                     }}>
-                        <span style={{ color: '#94a3b8', fontSize: '13px', fontWeight: '700', letterSpacing: '1px', textTransform: 'uppercase' }}>Derash</span>
+                        <span style={{ color: '#94a3b8', fontSize: '11px', fontWeight: '700', letterSpacing: '1px', textTransform: 'uppercase' }}>Derash</span>
                         <span style={{
-                            color: '#10b981', fontSize: '36px', fontWeight: '900', letterSpacing: '0.5px',
-                            textShadow: '0 0 20px rgba(16, 185, 129, 0.3)',
-                        }}>{derash} <span style={{ fontSize: '16px', color: '#6ee7b7' }}>ETB</span></span>
-                        <span style={{ color: '#475569', fontSize: '11px' }}>{playerCount} player{playerCount !== 1 ? 's' : ''} joined</span>
+                            color: '#10b981', fontSize: '28px', fontWeight: '900', letterSpacing: '0.5px',
+                            textShadow: '0 0 15px rgba(16, 185, 129, 0.3)',
+                        }}>{derash} <span style={{ fontSize: '14px', color: '#6ee7b7' }}>ETB</span></span>
+                        <span style={{ color: '#475569', fontSize: '10px' }}>{playerCount} joined</span>
                     </div>
                 </div>
 
-                {/* SECOND HEADER ROW: Back button & Stats */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '12px', overflowX: 'auto', backgroundColor: '#0f172a', borderBottom: '1px solid #1e293b' }}>
+                <div style={{ 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '4px', 
+                    padding: '8px 10px', 
+                    backgroundColor: '#0f172a', 
+                    borderBottom: '1px solid #1e293b',
+                    overflow: 'hidden'
+                }}>
                     <button
                         onClick={() => router.push('/')}
-                        style={{ background: 'transparent', border: 'none', color: '#94a3b8', fontSize: '28px', padding: '4px 8px', marginRight: '4px', cursor: 'pointer' }}
+                        style={{ 
+                            background: 'rgba(255,255,255,0.05)', 
+                            border: '1px solid rgba(255,255,255,0.1)', 
+                            color: '#94a3b8', 
+                            fontSize: '20px', 
+                            borderRadius: '10px',
+                            width: '36px',
+                            height: '36px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            flexShrink: 0
+                        }}
                     >
-                        ←|
+                        ←
                     </button>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '10px 16px', backgroundColor: '#334155', borderRadius: '8px', minWidth: '90px' }}>
-                        <span style={{ fontSize: '11px', color: '#e2e8f0', fontWeight: '800', marginBottom: '2px' }}>Game ID:</span>
-                        <span style={{ fontSize: '16px', color: '#fff', fontWeight: '900' }}>{gameId}</span>
+                    <div style={{ flex: 1.2, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '4px 2px', backgroundColor: '#334155', borderRadius: '8px', minWidth: 0 }}>
+                        <span style={{ fontSize: '8px', color: '#e2e8f0', fontWeight: '800', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Game ID</span>
+                        <span style={{ fontSize: '12px', color: '#fff', fontWeight: '900', whiteSpace: 'nowrap', overflow: 'hidden' }}>#{gameId}</span>
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '10px 16px', backgroundColor: '#422e11', border: '1px solid #713f12', borderRadius: '8px', minWidth: '90px' }}>
-                        <span style={{ fontSize: '11px', color: '#f59e0b', fontWeight: '800', marginBottom: '2px' }}>Bet:</span>
-                        <span style={{ fontSize: '16px', color: '#fbbf24', fontWeight: '900' }}>{stake} Birr</span>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '4px 2px', backgroundColor: '#422e11', border: '1px solid #713f12', borderRadius: '8px', minWidth: 0 }}>
+                        <span style={{ fontSize: '8px', color: '#f59e0b', fontWeight: '800', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Bet</span>
+                        <span style={{ fontSize: '12px', color: '#fbbf24', fontWeight: '900', whiteSpace: 'nowrap', overflow: 'hidden' }}>{stake}<span style={{fontSize: '8px'}}> ETB</span></span>
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '10px 16px', backgroundColor: '#064e3b', border: '1px solid #065f46', borderRadius: '8px', minWidth: '90px' }}>
-                        <span style={{ fontSize: '11px', color: '#34d399', fontWeight: '800', marginBottom: '2px' }}>Wallet:</span>
-                        <span style={{ fontSize: '16px', color: '#6ee7b7', fontWeight: '900' }}>{walletBalance.toFixed(2)}</span>
+                    <div style={{ flex: 1.1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '4px 2px', backgroundColor: '#064e3b', border: '1px solid #065f46', borderRadius: '8px', minWidth: 0 }}>
+                        <span style={{ fontSize: '8px', color: '#34d399', fontWeight: '800', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Wallet</span>
+                        <span style={{ fontSize: '12px', color: '#6ee7b7', fontWeight: '900', whiteSpace: 'nowrap', overflow: 'hidden' }}>{walletBalance.toFixed(0)}</span>
                     </div>
 
-                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '10px 16px', backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', minWidth: '90px' }}>
-                        <span style={{ fontSize: '11px', color: '#cbd5e1', fontWeight: '800', marginBottom: '2px' }}>Players:</span>
-                        <span style={{ fontSize: '16px', color: '#fff', fontWeight: '900' }}>{playerCount}</span>
+                    <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '4px 2px', backgroundColor: '#1e293b', border: '1px solid #334155', borderRadius: '8px', minWidth: 0 }}>
+                        <span style={{ fontSize: '8px', color: '#cbd5e1', fontWeight: '800', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Players</span>
+                        <span style={{ fontSize: '12px', color: '#fff', fontWeight: '900', whiteSpace: 'nowrap', overflow: 'hidden' }}>{playerCount}</span>
                     </div>
                 </div>
 
@@ -580,7 +601,7 @@ export default function GamePage() {
                         </div>
                         <div className="number-grid-container">
                             <div className="number-grid">
-                                {Array.from({ length: 200 }, (_, i) => i + 1).map(num => {
+                                {Array.from({ length: 400 }, (_, i) => i + 1).map(num => {
                                     const isSelected = pickedNumbers.includes(num);
                                     const isTaken = takenNumbers.includes(num);
                                     return (
@@ -598,56 +619,7 @@ export default function GamePage() {
                     </>
                 )}
 
-                {/* Winning Patterns Info */}
-                <div style={{ margin: '20px 16px', borderRadius: '12px', overflow: 'hidden', backgroundColor: '#0f172a', border: '1px solid #1e293b' }}>
-                    <div style={{ padding: '20px' }}>
-                        <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: '800', marginBottom: '16px' }}>🏆 Winning Patterns</h3>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            {[
-                                { icon: '🔲', name: 'Four Corners', desc: 'Mark all 4 corners of the card', priority: '1st Priority' },
-                                { icon: '➡️', name: 'Horizontal Line', desc: 'Complete any full row', priority: '2nd Priority' },
-                                { icon: '⬇️', name: 'Vertical Line', desc: 'Complete any full column', priority: '3rd Priority' },
-                                { icon: '↗️', name: 'Diagonal', desc: 'Complete either diagonal', priority: '4th Priority' },
-                            ].map((p, i) => (
-                                <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '10px 14px', backgroundColor: '#1e293b', borderRadius: '8px' }}>
-                                    <span style={{ fontSize: '22px' }}>{p.icon}</span>
-                                    <div style={{ flex: 1 }}>
-                                        <div style={{ color: '#e2e8f0', fontWeight: '700', fontSize: '14px' }}>{p.name}</div>
-                                        <div style={{ color: '#64748b', fontSize: '12px' }}>{p.desc}</div>
-                                    </div>
-                                    <span style={{
-                                        padding: '3px 10px', borderRadius: '12px', fontSize: '11px', fontWeight: '800',
-                                        background: i === 0 ? 'rgba(234,179,8,0.2)' : 'rgba(100,116,139,0.2)',
-                                        color: i === 0 ? '#fbbf24' : '#94a3b8',
-                                    }}>{p.priority}</span>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
 
-                    {/* Rules */}
-                    <div style={{ borderTop: '1px solid #1e293b', padding: '20px' }}>
-                        <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: '800', marginBottom: '14px' }}>📋 How to Play</h3>
-                        <div style={{ color: '#cbd5e1', fontSize: '14px', lineHeight: '1.7', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            <div>1) Choose 1 or 2 cards and pick your number(s)</div>
-                            <div>2) Game starts when minimum 2 players join (30s window)</div>
-                            <div>3) Numbers are called automatically every 3 seconds</div>
-                            <div>4) Cards are marked automatically by the server</div>
-                            <div>5) First player to complete any winning pattern wins the Derash!</div>
-                        </div>
-                    </div>
-
-                    <div style={{ borderTop: '1px solid #1e293b', padding: '20px' }}>
-                        <h3 style={{ color: '#fff', fontSize: '18px', fontWeight: '800', marginBottom: '14px', fontFamily: 'serif' }}>መመሪያ</h3>
-                        <div style={{ color: '#cbd5e1', fontSize: '14px', lineHeight: '1.7', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                            <div>1) 1 ወይም 2 ካርዶች ይምረጡ ቁጥርዎን ይምረጡ</div>
-                            <div>2) ቢያንስ 2 ተጫዋቾች ሲቀላቀሉ ጨዋታው ይጀምራል (30 ሰከንድ)</div>
-                            <div>3) ቁጥሮች በየ3 ሰከንድ በራስ-ሰር ይወጣሉ</div>
-                            <div>4) ካርዶች በሰርቨር በራስ-ሰር ይሞላሉ</div>
-                            <div>5) ፓተርን ያጠናቀቀ የመጀመሪያ ተጫዋች ድራሹን ያሸንፋል!</div>
-                        </div>
-                    </div>
-                </div>
             </div>
         );
     }

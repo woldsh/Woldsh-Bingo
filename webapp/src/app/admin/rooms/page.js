@@ -120,17 +120,36 @@ export default function AdminRoomsPage() {
                                         <td>{game.cardsSold}</td>
                                         <td style={{ color: 'var(--accent-gold)', fontWeight: 600 }}>{Number(game.prize).toFixed(2)} ETB</td>
                                         <td style={{ color: 'var(--text-muted)' }}>{timeAgo(game.createdAt)}</td>
-                                        <td>{getStatusBadge(game.status)}</td>
-                                        <td style={{ textAlign: 'right' }}>
-                                            {game.status === 'waiting' && (
-                                                <button
-                                                    onClick={() => handleCancelGame(game.id)}
-                                                    className="admin-btn-outline"
-                                                    style={{ color: 'var(--admin-btn-text, #ef4444)', borderColor: 'var(--admin-btn-border, #fca5a5)', padding: '4px 8px', fontSize: '11px' }}
-                                                >
-                                                    Cancel Room
-                                                </button>
+                                        <td>
+                                            {getStatusBadge(game.status)}
+                                            {templates.find(t => t.stake === game.stake)?.isMaintenance && (
+                                                <div style={{ fontSize: '9px', fontWeight: 900, color: '#ef4444', marginTop: '2px' }}>🛠️ MAINTENANCE</div>
                                             )}
+                                        </td>
+                                        <td style={{ textAlign: 'right' }}>
+                                            <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
+                                                <button
+                                                    onClick={() => handleToggleMaintenance(game.stake)}
+                                                    className="admin-btn-outline"
+                                                    style={{ 
+                                                        borderColor: templates.find(t => t.stake === game.stake)?.isMaintenance ? '#ef4444' : '#64748b',
+                                                        color: templates.find(t => t.stake === game.stake)?.isMaintenance ? '#ef4444' : '#64748b',
+                                                        padding: '4px 8px', fontSize: '11px' 
+                                                    }}
+                                                >
+                                                    {templates.find(t => t.stake === game.stake)?.isMaintenance ? 'Open Room' : 'Set Maintenance'}
+                                                </button>
+                                                
+                                                {game.status === 'waiting' && (
+                                                    <button
+                                                        onClick={() => handleCancelGame(game.id)}
+                                                        className="admin-btn-outline"
+                                                        style={{ color: '#ef4444', borderColor: '#fca5a5', padding: '4px 8px', fontSize: '11px' }}
+                                                    >
+                                                        Cancel Room
+                                                    </button>
+                                                )}
+                                            </div>
                                         </td>
                                     </tr>
                                 ))}

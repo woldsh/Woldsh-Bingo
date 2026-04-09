@@ -5,6 +5,7 @@ const Redis = require('ioredis');
 const prisma = require('../lib/prisma');
 const fs = require('fs');
 const path = require('path');
+const { refreshSettingsCache } = require('../services/settingsCache');
 
 const router = express.Router();
 
@@ -482,7 +483,7 @@ router.get('/settings', adminAuthMiddleware, async (req, res) => {
         await seedDefaultSettings();
 
         const dbSettings = await prisma.setting.findMany();
-        
+
         // Convert array of {key, value} to flat object
         const settings = {};
         for (const s of dbSettings) {
@@ -532,6 +533,14 @@ router.post('/settings', adminAuthMiddleware, async (req, res) => {
         const settings = {};
         for (const s of dbSettings) {
             settings[s.key] = s.value;
+        }
+
+        // Refresh global in-memory cache for game engine
+        await refreshSettingsCache();
+
+        // Broadcast to all clients to refresh their lobby status
+        if (req.io) {
+            req.io.emit('rooms_updated');
         }
 
         res.json({ success: true, settings });

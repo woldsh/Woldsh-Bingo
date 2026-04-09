@@ -4,6 +4,7 @@ const { authMiddleware } = require('../middleware/auth');
 const { adminAuthMiddleware } = require('../middleware/adminAuth');
 const { generateCard, callNumber } = require('../services/bingo');
 const { startGameLoop, calculateDerash, broadcast } = require('../services/gameEngine');
+const { getSettings } = require('../services/settingsCache');
 
 const router = express.Router();
 
@@ -13,11 +14,15 @@ const activeTimers = new Map(); // gameId -> timeoutId
  * Schedule a game to auto-start after the 30-second window
  * Minimum 2 players required to start
  */
-const scheduleGameStart = (id, targetTime) => {
+const scheduleGameStart = async (id, targetTime) => {
     if (activeTimers.has(id)) return;
 
+    const settings = await getSettings();
+    const waitingTime = parseInt(settings.waitingTimeSeconds || 30) * 1000;
+    const minPlayers = parseInt(settings.minPlayersToStart || 2);
+
     const now = Date.now();
-    let delay = targetTime ? new Date(targetTime).getTime() - now : 30000;
+    let delay = targetTime ? new Date(targetTime).getTime() - now : waitingTime;
     if (delay < 0) delay = 0;
 
     const timeoutId = setTimeout(async () => {
@@ -30,8 +35,8 @@ const scheduleGameStart = (id, targetTime) => {
 
             if (!checkGame || checkGame.status !== 'waiting') return;
 
-            if (checkGame.players.length >= 2) {
-                // Minimum 2 players reached — start the game!
+            if (checkGame.players.length >= minPlayers) {
+                // Minimum players reached — start the game!
                 const firstNum = callNumber([]);
                 await prisma.game.update({
                     where: { id },
@@ -54,9 +59,9 @@ const scheduleGameStart = (id, targetTime) => {
                 startGameLoop(id);
 
             } else {
-                // Not enough players, reset timer for another 30 seconds
-                console.log(`[GameStart] Game #${id} has ${checkGame.players.length} player(s), need 2. Resetting timer.`);
-                const newStartAt = new Date(Date.now() + 30000);
+                // Not enough players, reset timer for another interval
+                console.log(`[GameStart] Game #${id} has ${checkGame.players.length} player(s), need ${minPlayers}. Resetting timer.`);
+                const newStartAt = new Date(Date.now() + waitingTime);
                 await prisma.game.update({
                     where: { id },
                     data: { startAt: newStartAt }
@@ -65,7 +70,7 @@ const scheduleGameStart = (id, targetTime) => {
                 // Broadcast updated timer
                 broadcast(id, 'timer_reset', {
                     startAt: newStartAt.toISOString(),
-                    reason: 'Need minimum 2 players',
+                    reason: `Need minimum ${minPlayers} players`,
                 });
 
                 scheduleGameStart(id, newStartAt);
@@ -81,6 +86,9 @@ const scheduleGameStart = (id, targetTime) => {
 // GET /api/games - List active game rooms
 router.get('/', async (req, res) => {
     try {
+        const settings = await getSettings();
+        const globalMaintenance = settings.maintenanceMode === 'true';
+        const globalNotice = settings.botAnnouncements || '';
         const rooms = [];
 
         // Fetch active templates from DB, ordered by stake
@@ -129,7 +137,9 @@ router.get('/', async (req, res) => {
             });
 
             if (!game) {
-                const newStartAt = new Date(Date.now() + 30000);
+                const settings = await getSettings();
+                const waitingTime = parseInt(settings.waitingTimeSeconds || 30) * 1000;
+                const newStartAt = new Date(Date.now() + waitingTime);
 
                 game = await prisma.game.create({
                     data: {
@@ -175,7 +185,7 @@ router.get('/', async (req, res) => {
             });
         }
 
-        res.json({ rooms });
+        res.json({ rooms, globalMaintenance, globalNotice });
     } catch (error) {
         console.error('Error listing games:', error);
         res.status(500).json({ error: 'Failed to list games' });
@@ -218,8 +228,8 @@ router.post('/:id/join', authMiddleware, async (req, res) => {
         }
 
         for (const num of pickedNumbers) {
-            if (!Number.isInteger(num) || num < 1 || num > 200) {
-                return res.status(400).json({ error: 'Each picked number must be between 1 and 200' });
+            if (!Number.isInteger(num) || num < 1 || num > 400) {
+                return res.status(400).json({ error: 'Each picked number must be between 1 and 400' });
             }
         }
 
@@ -245,7 +255,9 @@ router.post('/:id/join', authMiddleware, async (req, res) => {
             });
 
             if (!newGame) {
-                const newStartAt = new Date(Date.now() + 30000);
+                const settings = await getSettings();
+                const waitingTime = parseInt(settings.waitingTimeSeconds || 30) * 1000;
+                const newStartAt = new Date(Date.now() + waitingTime);
                 newGame = await prisma.game.create({
                     data: {
                         stake: game.stake,

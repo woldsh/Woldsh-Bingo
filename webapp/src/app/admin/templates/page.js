@@ -13,7 +13,7 @@ export default function RoomTemplatesPage() {
         name: '',
         stake: '',
         prize: '',
-        maxPlayers: 4,
+        maxPlayers: 1000,
         theme: 'blue',
         sortOrder: 0,
         isActive: true
@@ -51,7 +51,7 @@ export default function RoomTemplatesPage() {
             name: '',
             stake: '',
             prize: '',
-            maxPlayers: 4,
+            maxPlayers: 1000,
             theme: 'blue',
             sortOrder: 0,
             isActive: true

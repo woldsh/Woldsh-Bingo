@@ -15,6 +15,7 @@
 
 const prisma = require('../lib/prisma');
 const { callNumber, getLetterForNumber, checkAllPatterns, getMatchingNumbers, PATTERN_PRIORITY } = require('./bingo');
+const { getSettings } = require('./settingsCache');
 
 // Track active game loops to prevent duplicates
 // gameId -> timeoutId (using setTimeout, NOT setInterval)
@@ -85,7 +86,10 @@ async function startGameLoop(gameId) {
  * Schedule the next game tick using setTimeout.
  * The callback awaits callAndProcess, ensuring no overlap.
  */
-function scheduleNextTick(gameId) {
+async function scheduleNextTick(gameId) {
+    const settings = await getSettings();
+    const interval = parseInt(settings.numberCallInterval || 3) * 1000;
+
     const timeoutId = setTimeout(async () => {
         const shouldContinue = await callAndProcess(gameId);
         if (shouldContinue) {
@@ -97,7 +101,7 @@ function scheduleNextTick(gameId) {
             processingGames.delete(gameId);
             console.log(`[GameEngine] 🛑 Game loop ended for game #${gameId}`);
         }
-    }, 3000);
+    }, interval);
 
     activeGames.set(gameId, timeoutId);
 }

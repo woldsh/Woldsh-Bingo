@@ -14,6 +14,8 @@ export default function HomePage() {
   const [showRules, setShowRules] = useState(false);
   const [loading, setLoading] = useState(true);
   const [needsPhone, setNeedsPhone] = useState(false);
+  const [isGlobalMaintenance, setIsGlobalMaintenance] = useState(false);
+  const [globalNotice, setGlobalNotice] = useState('');
 
   useEffect(() => {
     expandWebApp();
@@ -63,8 +65,12 @@ export default function HomePage() {
   async function fetchRooms() {
     try {
       const { gamesApi } = await import('@/lib/api');
-      const data = await gamesApi.list();
+      // Add timestamp to bypass mobile caching
+      const data = await gamesApi.list(`?t=${Date.now()}`);
       if (data.rooms) setRooms(data.rooms);
+      setGlobalNotice(data.globalNotice || '');
+      // Use loose truthy check for robust boolean handling from different DBs
+      if (data.globalMaintenance !== undefined) setIsGlobalMaintenance(!!data.globalMaintenance);
     } catch {
       // API not available
     } finally {
@@ -78,10 +84,95 @@ export default function HomePage() {
     router.push(`/game/${room.id}`);
   }
 
+  if (loading) {
+    return (
+      <div className="page-container obsidian-theme" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: '100vh' }}>
+        <div className="loading-spinner"></div>
+      </div>
+    );
+  }
+
+  if (isGlobalMaintenance) {
+    return (
+      <div className="page-container obsidian-theme" style={{
+        display: 'flex',
+        flexDirection: 'column',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '30px',
+        textAlign: 'center',
+        minHeight: '100vh',
+        background: '#020617'
+      }}>
+        <div style={{
+          width: '100px',
+          height: '100px',
+          background: 'rgba(239, 68, 68, 0.2)',
+          borderRadius: '30px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: '30px',
+          border: '2px solid #ef4444',
+          boxShadow: '0 0 30px rgba(239, 68, 68, 0.3)'
+        }}>
+          <span style={{ fontSize: '50px' }} className="maintenance-vibrate">🛠️</span>
+        </div>
+        <h1 className="maintenance-vibrate" style={{
+          fontSize: '32px',
+          fontWeight: '900',
+          color: '#ef4444',
+          marginBottom: '16px',
+          letterSpacing: '1px'
+        }}>
+          SYSTEM MAINTENANCE
+        </h1>
+        <p style={{ color: '#94a3b8', lineHeight: 1.6, maxWidth: '280px', margin: '0 auto 30px', fontWeight: '500' }}>
+          We are upgrading our systems to serve you better. We'll be back online shortly!
+        </p>
+        <div style={{
+          padding: '16px 32px',
+          background: '#ef4444',
+          borderRadius: '16px',
+          border: '2px solid #fff',
+          color: '#fff',
+          fontSize: '18px',
+          fontWeight: '900',
+          boxShadow: '0 0 20px rgba(239, 68, 68, 0.5)'
+        }}>
+          MAINTENANCE MODE
+        </div>
+
+        {/* Notice Bar inside Maintenance Screen */}
+        {globalNotice && (
+          <div className="maintenance-vibrate" style={{
+            marginTop: '24px',
+            padding: '14px 24px',
+            background: 'rgba(251, 191, 36, 0.15)',
+            borderRadius: '16px',
+            border: '2px solid #fbbf24',
+            color: '#fbbf24',
+            fontSize: '16px',
+            fontWeight: '800',
+            maxWidth: '320px',
+            boxShadow: '0 0 20px rgba(251, 191, 36, 0.3)',
+            textAlign: 'center'
+          }}>
+            📢 {globalNotice}
+          </div>
+        )}
+
+        <div style={{ marginTop: '40px', opacity: 0.5, fontSize: '12px', color: '#64748b' }}>
+          &copy; 2026 Woldsh Bingo. All rights reserved.
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="page-container obsidian-theme">
-      {/* Header */}
-      <header className="header">
+      {/* Original Simple Header */}
+      <header className="header" style={{ borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
         <div className="header-brand">
           <div className="header-logo" style={{
             width: 32, height: 32, borderRadius: 8, overflow: 'hidden', padding: 0,
@@ -89,133 +180,162 @@ export default function HomePage() {
           }}>
             <Image src="/banner.png" alt="Logo" width={32} height={32} style={{ objectFit: 'cover' }} />
           </div>
-          <span className="header-title">WOLDSH BINGO</span>
+          <span className="header-title" style={{ fontSize: '18px', fontWeight: '800' }}>WOLDSH BINGO</span>
         </div>
-        <button className="header-btn" onClick={() => setShowRules(true)}>
-          Rules
+        <button className="header-btn" onClick={() => setShowRules(true)} style={{
+          background: 'linear-gradient(135deg, rgba(251, 191, 36, 0.1) 0%, rgba(217, 119, 6, 0.1) 100%)',
+          border: '1px solid rgba(251, 191, 36, 0.4)',
+          padding: '6px 20px',
+          borderRadius: '20px',
+          color: '#fbbf24',
+          fontSize: '13px',
+          fontWeight: '800',
+          letterSpacing: '1px',
+          textTransform: 'uppercase',
+          boxShadow: '0 0 15px rgba(251, 191, 36, 0.15)',
+          transition: 'all 0.3s ease'
+        }}>
+          📜 Rules
         </button>
       </header>
 
-      {/* Registration Banner */}
-      {needsPhone && (
+      {/* Global Notice Bar */}
+      {globalNotice && (
         <div style={{
-          margin: '20px',
-          padding: '16px',
-          background: 'var(--gradient-card-1)',
+          margin: '16px 16px 0',
+          padding: '14px 18px',
+          background: 'linear-gradient(135deg, #0f172a 0%, #020617 100%)',
           borderRadius: '16px',
-          border: '1px solid var(--accent-gold)',
-          textAlign: 'center'
-        }}>
-          <h3 style={{ marginBottom: 8, color: 'var(--accent-gold)' }}>🎁 10 ETB Welcome Bonus</h3>
-          <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16 }}>
-            Share your phone number to complete registration and claim your bonus!
-          </p>
-          <button
-            className="btn btn-primary"
-            style={{ width: '100%' }}
-            onClick={handleRequestContact}
-          >
-            📱 Verify Phone Number
-          </button>
-        </div>
-      )}
-
-      {/* Maintenance Banner */}
-      {rooms.some(r => r.isMaintenance) && (
-        <div style={{
-          margin: '12px 20px',
-          padding: '10px 16px',
-          background: 'rgba(245, 158, 11, 0.12)',
-          borderRadius: '12px',
-          border: '1px solid rgba(245, 158, 11, 0.3)',
+          border: '2px solid #fbbf24',
           display: 'flex',
           alignItems: 'center',
-          gap: '10px',
-          fontSize: '13px',
-          color: '#fbbf24',
+          gap: '14px',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.4), 0 0 15px rgba(251, 191, 36, 0.1)'
         }}>
-          <span style={{ fontSize: '16px' }}>🔧</span>
-          <span>This room is temporarily stopped for maintenance.</span>
+          <div style={{
+            fontSize: '22px',
+            background: 'rgba(251, 191, 36, 0.15)',
+            width: '40px',
+            height: '40px',
+            borderRadius: '12px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            border: '1px solid rgba(251, 191, 36, 0.3)'
+          }}>
+            🔔
+          </div>
+          <div style={{ color: '#fbbf24', fontSize: '15px', fontWeight: '800', lineHeight: 1.4, letterSpacing: '0.3px' }}>
+            {globalNotice}
+          </div>
         </div>
       )}
 
       {/* Stake Selection */}
-      <div style={{ padding: '24px 0 8px' }}>
-        <h2 className="section-title">Choose Your Stake</h2>
-      </div>
-
-      <div className="stake-cards">
+      <div className="stake-cards" style={{ padding: '20px 16px' }}>
         {loading ? (
-          /* Loading skeleton - shows while rooms are being fetched */
           [1, 2, 3].map((i) => (
-            <div key={`skeleton-${i}`} className="stake-card stake-card-blue" style={{ opacity: 0.4, animation: 'pulse 1.5s ease-in-out infinite' }}>
-              <div className="stake-info">
-                <div style={{ width: '80px', height: '28px', background: 'rgba(255,255,255,0.1)', borderRadius: '8px' }}></div>
-                <div style={{ width: '60px', height: '16px', background: 'rgba(255,255,255,0.08)', borderRadius: '6px', marginTop: '8px' }}></div>
-                <div style={{ width: '120px', height: '14px', background: 'rgba(255,255,255,0.06)', borderRadius: '6px', marginTop: '8px' }}></div>
-              </div>
-              <div className="stake-actions">
-                <div style={{ width: '70px', height: '26px', background: 'rgba(255,255,255,0.08)', borderRadius: '12px' }}></div>
-                <div style={{ width: '60px', height: '36px', background: 'rgba(255,255,255,0.1)', borderRadius: '10px', marginTop: '8px' }}></div>
-              </div>
-            </div>
+            <div key={`skeleton-${i}`} className="stake-card gold-bezel" style={{ height: '140px', background: '#1e3a8a', opacity: 0.5, marginBottom: '20px' }}></div>
           ))
         ) : rooms.length === 0 ? (
-          <div style={{ textAlign: 'center', padding: '40px 20px', color: '#94a3b8' }}>
-            <div style={{ fontSize: '40px', marginBottom: '12px' }}>🎮</div>
-            <div style={{ fontSize: '16px', fontWeight: '700' }}>No rooms available</div>
-            <div style={{ fontSize: '13px', marginTop: '6px', color: '#64748b' }}>Please check back later</div>
+          <div style={{ textAlign: 'center', padding: '60px 20px' }}>
+            <div style={{ fontSize: '48px', marginBottom: '16px' }}>🎰</div>
+            <h3 style={{ color: '#fff' }}>No Active Rooms</h3>
           </div>
         ) : (
-          rooms.map((room) => (
-            <div
-              key={room.id || `maintenance-${room.stake}`}
-              className={`stake-card stake-card-${room.theme || 'blue'} ${room.isMaintenance ? 'stake-card-maintenance' : ''}`}
-              onClick={() => handlePlay(room)}
-              style={room.isMaintenance ? { opacity: 0.7, cursor: 'default' } : {}}
-            >
-              <div className="stake-info">
-                <div className="stake-amount">{room.stake} ETB</div>
-                <div className="stake-name">{room.roomName}</div>
-                {!room.isMaintenance && (
-                  <>
-                    <div className="player-count">
-                      {room.playerCount} player{room.playerCount !== 1 ? 's' : ''} joined
-                    </div>
-                    <div style={{
-                      fontSize: '14px',
-                      color: (room.derash || room.prize) > 0 ? '#10b981' : '#64748b',
-                      marginTop: 4,
-                      fontWeight: '800',
-                      textShadow: (room.derash || room.prize) > 0 ? '0 0 10px rgba(16,185,129,0.3)' : 'none',
-                      letterSpacing: '0.5px'
+          rooms.map((room, index) => {
+            // Determine theme color based on status - use loose truthy check for robust boolean handling
+            const isMaintenance = !!room.isMaintenance;
+            const themeClass = isMaintenance ? 'silver' : (room.stake >= 100 ? 'navy' : room.stake >= 30 ? 'red' : 'blue');
+            const bgGradient = isMaintenance ? 'linear-gradient(135deg, #020617 0%, #0f172a 100%)' : `var(--metallic-${themeClass})`;
+
+            return (
+              <div
+                key={room.id || index}
+                className="stake-card gold-bezel"
+                style={{
+                  background: bgGradient,
+                  padding: '10px 16px',
+                  borderRadius: '12px',
+                  marginBottom: '12px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '4px',
+                  position: 'relative',
+                  overflow: 'hidden',
+                  border: isMaintenance ? '2px solid #ef4444' : undefined,
+                  opacity: 1,
+                  pointerEvents: isMaintenance ? 'none' : 'auto'
+                }}
+              >
+                {/* Achievement/Rank Emoji or Lock */}
+                <div style={{ position: 'absolute', top: 10, left: 12, fontSize: '18px', zIndex: 2 }}>
+                  {isMaintenance ? '⚠️' : (room.stake >= 100 ? '🏆' : room.stake >= 50 ? '👑' : '⭐')}
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div className="stake-info" style={{ paddingLeft: '24px' }}>
+                    <div className="text-metallic-gold" style={{
+                      fontSize: '28px',
+                      fontWeight: '900',
+                      lineHeight: 1,
+                      filter: isMaintenance ? 'grayscale(0.5) opacity(0.8)' : 'drop-shadow(0 2px 4px rgba(0,0,0,0.3))'
                     }}>
-                      Derash: {room.derash || room.prize || 0} ETB
+                      {room.stake} ETB
                     </div>
-                  </>
-                )}
+                    <div className={isMaintenance ? "maintenance-vibrate" : ""} style={{
+                      fontSize: '14px',
+                      fontWeight: '900',
+                      color: isMaintenance ? '#ef4444' : '#cbd5e1',
+                      marginTop: '4px',
+                      textTransform: 'uppercase',
+                      letterSpacing: '1px'
+                    }}>
+                      {isMaintenance ? 'UNDER MAINTENANCE' : room.roomName}
+                    </div>
+                  </div>
+
+                  <div className="stake-actions" style={{ display: 'flex', gap: '6px' }}>
+                    {!isMaintenance && (
+                      <div className="btn-metallic btn-metallic-silver" style={{ padding: '4px 8px', fontSize: '10px', gap: '4px' }}>
+                        🕒 WAIT
+                      </div>
+                    )}
+                    <button
+                      className={isMaintenance ? "btn-metallic maintenance-vibrate" : "btn-metallic btn-metallic-green"}
+                      style={{
+                        padding: '8px 20px',
+                        fontSize: '12px',
+                        background: isMaintenance ? '#ef4444' : undefined,
+                        color: isMaintenance ? '#fff' : '#fff',
+                        border: isMaintenance ? '2px solid #fff' : undefined,
+                        fontWeight: '900',
+                        boxShadow: isMaintenance ? '0 0 20px rgba(239, 68, 68, 0.4)' : undefined
+                      }}
+                      disabled={isMaintenance}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handlePlay(room);
+                      }}
+                    >
+                      {isMaintenance ? 'MAINTENANCE' : 'PLAY'}
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '2px', borderTop: '1px solid rgba(255,255,255,0.05)', paddingTop: '4px' }}>
+                  <div style={{ color: '#94a3b8', fontSize: '12px', fontWeight: '600' }}>
+                    {room.playerCount} Players 👥
+                  </div>
+                  <div style={{ fontSize: '14px', fontWeight: '800', display: 'flex', gap: '4px' }}>
+                    <span style={{ color: '#fff', opacity: 0.8 }}>Derash:</span>
+                    <span style={{ color: '#fbbf24' }}>{room.derash || room.prize || 0} ETB</span>
+                  </div>
+                </div>
               </div>
-              <div className="stake-actions">
-                {room.isMaintenance ? (
-                  <span className="badge badge-maintenance">MAINTENANCE</span>
-                ) : (
-                  <span className={`badge ${room.status === 'waiting' ? 'badge-waiting' : 'badge-playing'}`}>
-                    {room.status === 'waiting' ? 'WAITING' : 'GAME STARTED'}
-                  </span>
-                )}
-                <button
-                  className={`btn-play ${room.isMaintenance ? 'btn-play-disabled' : ''}`}
-                  disabled={room.isMaintenance}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handlePlay(room);
-                  }}
-                >
-                  PLAY
-                </button>
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
 
@@ -223,43 +343,57 @@ export default function HomePage() {
       {showRules && (
         <div className="modal-overlay" onClick={() => setShowRules(false)}>
           <div className="modal" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-title">📋 Game Rules</div>
-            <div className="rules-list">
-              <div style={{ marginBottom: '15px' }}>
-                <div style={{ color: 'var(--accent-gold)', fontWeight: 'bold', marginBottom: '8px' }}>How to play</div>
-                <div className="rule-item">1) Choose your stake, then select 1 or 2 cards.</div>
-                <div className="rule-item">2) Minimum 2 players required. Game starts after 30 seconds.</div>
-                <div className="rule-item">3) Numbers are called automatically every 3 seconds.</div>
-                <div className="rule-item">4) Cards are marked automatically by the server.</div>
-                <div className="rule-item">5) First player to complete a winning pattern wins the Derash!</div>
-              </div>
-
-              <div style={{ marginBottom: '15px' }}>
-                <div style={{ color: 'var(--accent-gold)', fontWeight: 'bold', marginBottom: '8px' }}>🏆 Winning Patterns (Priority Order)</div>
-                <div className="rule-item">🔲 Four Corners (1st)</div>
-                <div className="rule-item">➡️ Horizontal Line (2nd)</div>
-                <div className="rule-item">⬇️ Vertical Line (3rd)</div>
-                <div className="rule-item">↗️ Diagonal (4th)</div>
-              </div>
-
-              <div style={{ marginBottom: '15px' }}>
-                <div style={{ color: 'var(--accent-gold)', fontWeight: 'bold', marginBottom: '8px' }}>💰 Derash (Prize Pool)</div>
-                <div className="rule-item">Derash = Number of players × Bet × 80%</div>
-                <div className="rule-item">Winner takes the full Derash amount!</div>
-              </div>
-
-              <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '15px' }}>
-                <div style={{ color: 'var(--accent-gold)', fontWeight: 'bold', marginBottom: '8px' }}>መመሪያ</div>
-                <div className="rule-item">1) መወራረጃዎን ይምረጡ እና 1 ወይም 2 ካርዶች ይምረጡ።</div>
-                <div className="rule-item">2) ቢያንስ 2 ተጫዋቾች ያስፈልጋሉ። 30 ሰከንድ በኋላ ጨዋታው ይጀምራል።</div>
-                <div className="rule-item">3) ቁጥሮች በየ3 ሰከንድ በራስ-ሰር ይወጣሉ።</div>
-                <div className="rule-item">4) ካርዶች በሰርቨር በራስ-ሰር ይሞላሉ።</div>
-                <div className="rule-item">5) ፓተርን ያጠናቀቀ የመጀመሪያ ተጫዋች ድራሹን ያሸንፋል!</div>
-              </div>
+            <div className="modal-title" style={{ fontSize: '24px', textAlign: 'center', marginBottom: '20px' }}>
+              💎 The Path to Victory
             </div>
-            <div style={{ marginTop: '20px', textAlign: 'center' }}>
-              <button className="btn btn-primary" onClick={() => setShowRules(false)}>
-                Got it! 🎮
+            <div className="rules-list" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+
+              {/* Step By Step Card */}
+              <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div style={{ color: '#fbbf24', fontWeight: '900', marginBottom: '10px', fontSize: '15px', textTransform: 'uppercase' }}>
+                  🎮 Step-by-Step Entry
+                </div>
+                <div className="rule-item" style={{ marginBottom: '6px' }}>1. **Select Stake**: Choose your table and pick 1 or 2 cards.</div>
+                <div className="rule-item" style={{ marginBottom: '6px' }}>2. **High Stakes**: Game begins after 30 seconds (min. 2 players).</div>
+                <div className="rule-item" style={{ marginBottom: '6px' }}>3. **Live Draw**: Numbers emerge every 3 seconds — feel the tension!</div>
+                <div className="rule-item">4. **Auto-Pilot**: Your cards are marked instantly by our high-performance server.</div>
+              </div>
+
+              {/* Winning Patterns Card */}
+              <div style={{ background: 'rgba(255,255,255,0.03)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
+                <div style={{ color: '#fbbf24', fontWeight: '900', marginBottom: '10px', fontSize: '15px', textTransform: 'uppercase' }}>
+                  🏆 Winning Patterns
+                </div>
+                <div className="rule-item">1) **Corners**: 4 corners (Highest Priority) 🔲</div>
+                <div className="rule-item">2) **Horizontal**: Full horizontal line ➡️</div>
+                <div className="rule-item">3) **Vertical**: Full vertical line ⬇️</div>
+                <div className="rule-item">4) **Diagonal**: Corner to corner ↗️</div>
+              </div>
+
+              {/* Prize Pool Card */}
+              <div style={{ background: 'var(--gradient-card-1)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(251, 191, 36, 0.4)' }}>
+                <div style={{ color: '#fbbf24', fontWeight: '900', marginBottom: '10px', fontSize: '15px', textTransform: 'uppercase' }}>
+                  💰 Derash (The Royal Prize)
+                </div>
+                <div className="rule-item" style={{ fontSize: '13px', opacity: 0.9 }}>
+                  The jackpot is calculated as: **Stake × Total Players × 80%**. The winner claims the throne and the entire pool!
+                </div>
+              </div>
+
+              {/* Amharic Guide Card */}
+              <div style={{ background: 'rgba(0,212,170,0.05)', padding: '16px', borderRadius: '12px', border: '1px solid rgba(0,212,170,0.2)' }}>
+                <div style={{ color: '#14b8a6', fontWeight: '900', marginBottom: '10px', fontSize: '15px' }}>
+                  🇪🇹 አጭር መመሪያ (Quick Guide)
+                </div>
+                <div className="rule-item">1. ካርድዎን ይምረጡ - በ30 ሰከንድ ውስጥ ጨዋታ ይጀምራል።</div>
+                <div className="rule-item">2. ቁጥሮች በራስ-ሰር ይወጣሉ - ምንም ድካም የለም።</div>
+                <div className="rule-item">3. አሸናፊው ድራሹን (80%ውን) ሙሉ በሙሉ ይወስዳል!</div>
+              </div>
+
+            </div>
+            <div style={{ marginTop: '24px', textAlign: 'center' }}>
+              <button className="btn-metallic btn-metallic-green" style={{ width: '100%', borderRadius: '12px', padding: '12px' }} onClick={() => setShowRules(false)}>
+                I’m Ready to Win! 🚀
               </button>
             </div>
           </div>

@@ -38,7 +38,7 @@ async function apiCall(endpoint, options = {}) {
 
 // Game API
 export const gamesApi = {
-    list: () => apiCall('/api/games'),
+    list: (params = '') => apiCall(`/api/games${params}`),
     get: (id) => apiCall(`/api/games/${id}`),
     join: (id, pickedNumbers, cardCount) =>
         apiCall(`/api/games/${id}/join`, {

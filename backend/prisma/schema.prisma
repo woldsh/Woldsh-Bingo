@@ -133,7 +133,7 @@ model RoomTemplate {
   name        String   // e.g., "Silver Room", "Gold Room"
   stake       Int      // e.g., 10, 50, 100
   prize       Decimal  @default(0) @db.Decimal(12, 2)
-  maxPlayers  Int      @default(4)
+  maxPlayers  Int      @default(1000)
   theme       String   @default("blue") // blue, green, red
   sortOrder   Int      @default(0) // lower = first
   isActive       Boolean  @default(true)

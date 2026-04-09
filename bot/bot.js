@@ -8,6 +8,7 @@ const BOT_TOKEN = process.env.BOT_TOKEN;
 const WEBAPP_URL = process.env.WEBAPP_URL || 'https://your-app.vercel.app';
 const API_URL = process.env.API_URL || 'http://localhost:3001';
 const INTERNAL_SECRET = process.env.INTERNAL_SECRET || 'bingoson-secret-123';
+const ADMIN_CHAT_ID = process.env.ADMIN_CHAT_ID || null;
 
 if (!BOT_TOKEN) {
     console.error('❌ BOT_TOKEN is required in .env file');
@@ -87,6 +88,11 @@ internalServer.listen(3010, () => {
 // userStates[chatId] = { state: 'awaiting_deposit_amount', bank: 'telebirr'|'cbebirr' }
 // userStates[chatId] = { state: 'awaiting_receipt', bank: '...', amount: 123 }
 const userStates = {};
+
+// ─── Admin Utility Command ───
+bot.onText(/\/myid/, async (msg) => {
+    await bot.sendMessage(msg.chat.id, `Your Telegram User ID is:\n\`${msg.chat.id}\`\n\nTo receive deposit receipts, add this ID to your bot/.env file as:\n\`ADMIN_CHAT_ID=${msg.chat.id}\``, { parse_mode: 'Markdown' });
+});
 
 // ─── Set bot menu commands ───
 bot.setMyCommands([
@@ -261,13 +267,24 @@ bot.onText(/\/play/, async (msg) => {
 // ─── /balance command handler ───
 bot.onText(/\/balance/, async (msg) => {
     const chatId = msg.chat.id;
-    await bot.sendMessage(chatId,
-        '🧾 *Your Balance*\n\n' +
-        '💰 Balance: 0.00 ETB\n' +
-        '🎮 Games Played: 0\n' +
-        '🏆 Games Won: 0',
-        { parse_mode: 'Markdown' }
-    );
+    try {
+        const res = await fetch(`${API_URL}/api/users/internal/${msg.from.id}?secret=${INTERNAL_SECRET}`);
+        const data = await res.json();
+        const balance = data.user ? Number(data.user.balance || 0).toFixed(2) : '0.00';
+        const played = data.stats ? data.stats.gamesPlayed : 0;
+        const won = data.stats ? data.stats.gamesWon : 0;
+        
+        await bot.sendMessage(chatId,
+            '🧾 *Your Balance*\n\n' +
+            `💰 Balance: ${balance} ETB\n` +
+            `🎮 Games Played: ${played}\n` +
+            `🏆 Games Won: ${won}`,
+            { parse_mode: 'Markdown' }
+        );
+    } catch (err) {
+        console.error('Error fetching balance:', err);
+        await bot.sendMessage(chatId, '❌ Failed to fetch balance.');
+    }
 });
 
 // ─── /withdraw command handler ───
@@ -396,13 +413,24 @@ bot.on('callback_query', async (callbackQuery) => {
             break;
 
         case 'balance':
-            await bot.sendMessage(chatId,
-                '🧾 *Your Balance*\n\n' +
-                '💰 Balance: 0.00 ETB\n' +
-                '🎮 Games Played: 0\n' +
-                '🏆 Games Won: 0',
-                { parse_mode: 'Markdown' }
-            );
+            try {
+                const res = await fetch(`${API_URL}/api/users/internal/${callbackQuery.from.id}?secret=${INTERNAL_SECRET}`);
+                const bData = await res.json();
+                const balance = bData.user ? Number(bData.user.balance || 0).toFixed(2) : '0.00';
+                const played = bData.stats ? bData.stats.gamesPlayed : 0;
+                const won = bData.stats ? bData.stats.gamesWon : 0;
+                
+                await bot.sendMessage(chatId,
+                    '🧾 *Your Balance*\n\n' +
+                    `💰 Balance: ${balance} ETB\n` +
+                    `🎮 Games Played: ${played}\n` +
+                    `🏆 Games Won: ${won}`,
+                    { parse_mode: 'Markdown' }
+                );
+            } catch (err) {
+                console.error('Error fetching balance:', err);
+                await bot.sendMessage(chatId, '❌ Failed to fetch balance.');
+            }
             break;
 
         case 'invite':
@@ -551,6 +579,32 @@ bot.on('message', async (msg) => {
     if (state.state === 'awaiting_receipt') {
         // User pasted SMS receipt text
         delete userStates[chatId];
+        
+        // Forward to admin
+        if (ADMIN_CHAT_ID) {
+            let phone = 'Unknown';
+            try {
+                const res = await fetch(`${API_URL}/api/users/internal/${msg.from.id}?secret=${INTERNAL_SECRET}`);
+                const data = await res.json();
+                if (data.user && data.user.phone) phone = data.user.phone;
+            } catch (err) { console.error('Error fetching phone:', err.message); }
+
+            const tgUsername = msg.from.username ? `@${msg.from.username}` : 'No Username';
+            const adminMsg = `🏦 *NEW DEPOSIT REQUEST*\n\n` +
+                `👤 User ID: ${msg.from.id}\n` +
+                `🗣 Name: ${msg.from.first_name || 'User'}\n` +
+                `🔗 Username: ${tgUsername}\n` +
+                `📱 Phone: ${phone}\n` +
+                `💰 Amount: ${state.amount.toFixed(2)} ETB\n` +
+                `🏦 Bank: ${state.bank === 'telebirr' ? 'Telebirr' : 'CBE Birr'}\n\n` +
+                `📝 *Receipt Text:*\n${text}`;
+            
+            await bot.sendMessage(ADMIN_CHAT_ID, adminMsg, { parse_mode: 'Markdown' })
+                .catch(err => console.error('Failed to forward receipt to admin:', err.message));
+        } else {
+            console.log('Admin Chat ID not set! Missed receipt text:', text);
+        }
+
         await bot.sendMessage(chatId,
             `✅ *Receipt received!*\n\n` +
             `Amount: ${state.amount.toFixed(2)} ETB\n` +
@@ -573,6 +627,34 @@ bot.on('photo', async (msg) => {
 
     if (state && state.state === 'awaiting_receipt') {
         delete userStates[chatId];
+        
+        // Forward to admin
+        if (ADMIN_CHAT_ID) {
+            let phone = 'Unknown';
+            try {
+                const res = await fetch(`${API_URL}/api/users/internal/${msg.from.id}?secret=${INTERNAL_SECRET}`);
+                const data = await res.json();
+                if (data.user && data.user.phone) phone = data.user.phone;
+            } catch (err) { console.error('Error fetching phone:', err.message); }
+
+            const tgUsername = msg.from.username ? `@${msg.from.username}` : 'No Username';
+            const photoId = msg.photo[msg.photo.length - 1].file_id;
+            const adminMsg = `🏦 *NEW DEPOSIT REQUEST*\n\n` +
+                `👤 User ID: ${msg.from.id}\n` +
+                `🗣 Name: ${msg.from.first_name || 'User'}\n` +
+                `🔗 Username: ${tgUsername}\n` +
+                `📱 Phone: ${phone}\n` +
+                `💰 Amount: ${state.amount.toFixed(2)} ETB\n` +
+                `🏦 Bank: ${state.bank === 'telebirr' ? 'Telebirr' : 'CBE Birr'}`;
+            
+            await bot.sendPhoto(ADMIN_CHAT_ID, photoId, {
+                caption: adminMsg,
+                parse_mode: 'Markdown'
+            }).catch(err => console.error('Failed to forward photo to admin:', err.message));
+        } else {
+            console.log('Admin Chat ID not set! Missed receipt photo from setup.');
+        }
+
         await bot.sendMessage(chatId,
             `✅ *Receipt screenshot received!*\n\n` +
             `Amount: ${state.amount.toFixed(2)} ETB\n` +

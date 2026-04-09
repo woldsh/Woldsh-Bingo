@@ -108,7 +108,20 @@ router.get('/internal/:telegramId', async (req, res) => {
         const user = await prisma.user.findUnique({
             where: { telegramId: BigInt(req.params.telegramId) }
         });
-        res.json({ user: user ? { ...user, telegramId: Number(user.telegramId) } : null });
+        
+        let stats = { gamesPlayed: 0, gamesWon: 0 };
+        if (user) {
+            const [gamesPlayed, gamesWon] = await Promise.all([
+                prisma.gamePlayer.count({ where: { userId: user.id } }),
+                prisma.gamePlayer.count({ where: { userId: user.id, isWinner: true } })
+            ]);
+            stats = { gamesPlayed, gamesWon };
+        }
+        
+        res.json({ 
+            user: user ? { ...user, telegramId: Number(user.telegramId) } : null,
+            stats
+        });
     } catch (error) {
         res.status(500).json({ error: error.message });
     }
