@@ -13,6 +13,8 @@ export default function WalletPage() {
     const [reference, setReference] = useState('');
     const [phone, setPhone] = useState('');
     const [message, setMessage] = useState('');
+    const [screenshotBase64, setScreenshotBase64] = useState('');
+    const [fileName, setFileName] = useState('');
 
     // New Withdrawal Requirement States
     const [stats, setStats] = useState({ gamesWon: 0 });
@@ -38,7 +40,7 @@ export default function WalletPage() {
             // Extract requirements info
             setPhone(userRes.user?.phone || '');
             setStats(userRes.stats || { gamesWon: 0 });
-            setHasDeposit(txData.transactions?.some(tx => tx.type === 'deposit' && tx.status === 'completed') || false);
+            setHasDeposit(txData.transactions?.some(tx => (tx.type === 'deposit' || (tx.type === 'adjust_wallet' && tx.amount > 0)) && tx.status === 'completed') || false);
         } catch {
             // Demo data
             setBalance(33);
@@ -57,17 +59,36 @@ export default function WalletPage() {
             setMessage('Minimum deposit is 10 ETB');
             return;
         }
+        if (!screenshotBase64) {
+            setMessage('Please upload a screenshot of your deposit receipt');
+            return;
+        }
         try {
             const { walletApi } = await import('@/lib/api');
-            const data = await walletApi.deposit(parseFloat(amount), reference);
+            const data = await walletApi.deposit(parseFloat(amount), reference, screenshotBase64);
             setMessage(data.message);
             setShowDeposit(false);
             setAmount('');
             setReference('');
+            setScreenshotBase64('');
+            setFileName('');
             loadWallet();
         } catch (err) {
             setMessage(err.message || 'Deposit failed');
         }
+    }
+
+    function handleFileChange(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        setFileName(file.name);
+
+        const reader = new FileReader();
+        reader.onloadend = () => {
+            setScreenshotBase64(reader.result);
+        };
+        reader.readAsDataURL(file);
     }
 
     async function handleWithdraw() {
@@ -222,33 +243,137 @@ export default function WalletPage() {
                 </div>
             )}
 
-            {/* Deposit Modal */}
+            {/* Deposit App UI Overlay (Clean Light Theme matching Withdraw) */}
             {showDeposit && (
-                <div className="modal-overlay" onClick={() => setShowDeposit(false)}>
-                    <div className="modal" onClick={e => e.stopPropagation()}>
-                        <div className="modal-title">💳 Deposit</div>
-                        <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 16, textAlign: 'center' }}>
-                            Send money to Telebirr: 09XXXXXXXX<br />
-                            Then enter the amount and reference below.
-                        </p>
-                        <input
-                            className="modal-input"
-                            type="number"
-                            placeholder="Amount (min 10 ETB)"
-                            value={amount}
-                            onChange={e => setAmount(e.target.value)}
-                        />
-                        <input
-                            className="modal-input"
-                            type="text"
-                            placeholder="Transaction reference (optional)"
-                            value={reference}
-                            onChange={e => setReference(e.target.value)}
-                        />
-                        <div className="modal-actions">
-                            <button className="btn btn-secondary" onClick={() => setShowDeposit(false)}>Cancel</button>
-                            <button className="btn btn-primary" onClick={handleDeposit}>Deposit</button>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 100, backgroundColor: '#f8fafc', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+                    {/* Top Section: Instructions & Bank Accounts */}
+                    <div style={{ padding: '24px 20px', background: '#ffffff', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', position: 'relative', zIndex: 2 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
+                            <button onClick={() => setShowDeposit(false)} style={{ background: 'none', border: 'none', fontSize: '24px', color: '#64748b', cursor: 'pointer', padding: 0 }}>×</button>
+                            <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 600, color: '#0f172a' }}>Deposit Funds</h2>
+                            <div style={{ width: '24px' }}></div>
                         </div>
+
+                        <div style={{ background: '#f8fafc', borderRadius: '16px', padding: '16px', border: '1px solid #e2e8f0' }}>
+                            <h3 style={{ margin: '0 0 16px 0', fontSize: '14px', color: '#0f172a', fontWeight: 600 }}>Please transfer funds to one of these accounts:</h3>
+                            
+                            {/* Telebirr Info */}
+                            <div style={{ background: '#ffffff', borderRadius: '12px', padding: '16px', marginBottom: '12px', border: '1px solid #e2e8f0' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                                    <div style={{ background: '#10b981', color: '#ffffff', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 700, marginRight: '12px' }}>TELEBIRR</div>
+                                    <span style={{ fontWeight: 600, color: '#0f172a', fontSize: '16px' }}>0921843172</span>
+                                </div>
+                                <div style={{ fontSize: '13px', color: '#64748b' }}>Account Name: <strong>Eisayas</strong></div>
+                            </div>
+                            
+                            {/* CBE Info */}
+                            <div style={{ background: '#ffffff', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0' }}>
+                                <div style={{ display: 'flex', alignItems: 'center', marginBottom: '8px' }}>
+                                    <div style={{ background: '#f59e0b', color: '#ffffff', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 700, marginRight: '12px' }}>CBE BIRR</div>
+                                    <span style={{ fontWeight: 600, color: '#0f172a', fontSize: '16px' }}>1000279474493</span>
+                                </div>
+                                <div style={{ fontSize: '13px', color: '#64748b' }}>Account Name: <strong>W/mariam</strong></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Bottom Section: Inputs */}
+                    <div style={{ flex: 1, padding: '32px 20px 100px', color: '#0f172a' }}>
+                        <h2 style={{ textAlign: 'center', margin: '0 0 24px 0', fontWeight: 700, fontSize: 24, color: '#0f172a' }}>Confirm Deposit</h2>
+                        
+                        <div style={{ marginBottom: '24px' }}>
+                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Amount Sent</label>
+                            <input
+                                type="number"
+                                placeholder="ETB 0"
+                                value={amount}
+                                onChange={e => setAmount(e.target.value)}
+                                style={{
+                                    width: '100%',
+                                    padding: '16px',
+                                    fontSize: '18px',
+                                    borderRadius: '12px',
+                                    border: '2px solid #e2e8f0',
+                                    backgroundColor: '#ffffff',
+                                    color: '#0f172a',
+                                    outline: 'none',
+                                    transition: 'border-color 0.2s',
+                                    fontWeight: 600
+                                }}
+                            />
+                        </div>
+
+                        <div style={{ marginBottom: '24px' }}>
+                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Transaction Note / Reference</label>
+                            <textarea
+                                placeholder="Enter transaction reference or note..."
+                                value={reference}
+                                onChange={e => setReference(e.target.value)}
+                                style={{
+                                    width: '100%',
+                                    padding: '16px',
+                                    fontSize: '15px',
+                                    borderRadius: '12px',
+                                    border: '2px solid #e2e8f0',
+                                    backgroundColor: '#ffffff',
+                                    color: '#0f172a',
+                                    outline: 'none',
+                                    minHeight: '80px',
+                                    resize: 'vertical',
+                                    fontFamily: 'inherit'
+                                }}
+                            />
+                        </div>
+
+                        <div style={{ marginBottom: '32px' }}>
+                            <label style={{ display: 'block', fontSize: '13px', fontWeight: 600, color: '#64748b', marginBottom: '8px', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Upload Screenshot (Required) *</label>
+                            
+                            <label style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                padding: '16px',
+                                border: '2px dashed #cbd5e1',
+                                borderRadius: '12px',
+                                backgroundColor: '#f8fafc',
+                                cursor: 'pointer',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s',
+                                color: '#1e293b',
+                                fontWeight: 500
+                            }}>
+                                <input 
+                                    type="file" 
+                                    accept="image/*" 
+                                    onChange={handleFileChange}
+                                    style={{ display: 'none' }}
+                                />
+                                {fileName ? `📸 ${fileName}` : '🖼️ Tap to select screenshot image'}
+                            </label>
+                        </div>
+
+                        <button 
+                            onClick={handleDeposit} 
+                            style={{ 
+                                width: '100%', 
+                                padding: '16px', 
+                                background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)', 
+                                color: '#ffffff', 
+                                fontSize: '16px', 
+                                fontWeight: 700, 
+                                border: 'none', 
+                                borderRadius: '12px', 
+                                cursor: 'pointer',
+                                boxShadow: '0 4px 15px rgba(37, 99, 235, 0.3)',
+                                transition: 'opacity 0.2s'
+                            }}
+                        >
+                            Submit Deposit
+                        </button>
+                        
+                        <p style={{ textAlign: 'center', fontSize: '13px', color: '#64748b', marginTop: '16px', lineHeight: 1.5 }}>
+                            Your deposit will be manually verified by our team before funds are credited.
+                        </p>
                     </div>
                 </div>
             )}
