@@ -78,8 +78,12 @@ export default function WalletPage() {
             setMessage('Minimum manual withdrawal is 100 Birr.');
             return;
         }
-        if (balance - reqAmount < 10) {
-            setMessage('You must leave a minimum remaining balance of 10 Birr.');
+        if (playBalance < reqAmount) {
+            setMessage(`Insufficient Play Wallet balance. You have ${playBalance.toFixed(0)} Birr available for withdrawal.`);
+            return;
+        }
+        if (playBalance - reqAmount < 10) {
+            setMessage('You must leave a minimum remaining Play Wallet balance of 10 Birr.');
             return;
         }
         if (!hasDeposit) {
@@ -249,138 +253,129 @@ export default function WalletPage() {
                 </div>
             )}
 
-            {/* Withdraw App UI Overlay */}
+            {/* Withdraw App UI Overlay (Clean Light Theme) */}
             {showWithdraw && (
-                <div style={{ position: 'fixed', inset: 0, zIndex: 100, backgroundColor: '#fdfdfd', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
+                <div style={{ position: 'fixed', inset: 0, zIndex: 100, backgroundColor: '#f8fafc', display: 'flex', flexDirection: 'column', overflowY: 'auto' }}>
 
                     {/* Top Section: Requirements */}
-                    <div style={{ padding: '24px 20px', background: '#fff', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', position: 'relative', zIndex: 2 }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-                            <h2 style={{ margin: 0, fontSize: 22, color: '#111827', fontWeight: 600 }}>Withdrawal Requirements</h2>
-                            <button onClick={() => setShowWithdraw(false)} style={{ background: 'none', border: 'none', fontSize: 28, color: '#9ca3af', lineHeight: 1, cursor: 'pointer' }}>×</button>
+                    <div style={{ padding: '24px 20px', background: '#ffffff', boxShadow: '0 4px 15px rgba(0,0,0,0.05)', position: 'relative', zIndex: 2 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', margin: '0 0 16px 0' }}>
+                            <h2 style={{ margin: 0, fontSize: 22, color: '#0f172a', fontWeight: 700 }}>Withdrawal Requirements</h2>
+                            <button onClick={() => setShowWithdraw(false)} style={{ background: '#f1f5f9', border: 'none', width: 36, height: 36, borderRadius: 18, fontSize: 20, color: '#64748b', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
                         </div>
-                        <p style={{ color: '#4b5563', fontSize: 15, marginBottom: 20, lineHeight: 1.5 }}>
+                        <p style={{ color: '#475569', fontSize: 15, marginBottom: 20, lineHeight: 1.5 }}>
                             To withdraw money, you need to fulfill the following requirements:
                         </p>
-                        <div style={{ background: '#f8fafc', padding: '16px 20px', borderRadius: 12, display: 'flex', flexDirection: 'column', gap: 12, border: '1px solid #f1f5f9' }}>
-                            <div style={{ display: 'flex', gap: 10, color: '#334155', fontSize: 14 }}>
-                                <span>🎯</span>
-                                <span>Minimum withdrawal: 100 Birr (Manual) or 10 Birr (Automatic)</span>
+                        <div style={{ background: '#ffffff', padding: '16px', borderRadius: 16, display: 'flex', flexDirection: 'column', gap: 14, border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+                            <div style={{ display: 'flex', gap: 12, color: '#334155', fontSize: 14, alignItems: 'center' }}>
+                                <div style={{ minWidth: 24, height: 24, borderRadius: 12, background: '#e0f2fe', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#0284c7' }}>🎯</div>
+                                <span>Minimum withdrawal: <strong style={{ color: '#0f172a' }}>100 Birr</strong></span>
                             </div>
-                            <div style={{ display: 'flex', gap: 10, color: '#334155', fontSize: 14 }}>
-                                <span>💸</span>
-                                <span>Minimum remaining balance: 10 Birr</span>
+                            <div style={{ display: 'flex', gap: 12, color: '#334155', fontSize: 14, alignItems: 'center' }}>
+                                <div style={{ minWidth: 24, height: 24, borderRadius: 12, background: '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#dc2626' }}>💸</div>
+                                <span>Minimum remaining balance: <strong style={{ color: '#dc2626' }}>10 Birr</strong></span>
                             </div>
-                            <div style={{ display: 'flex', gap: 10, color: '#334155', fontSize: 14 }}>
-                                <span>💰</span>
-                                <span style={{ color: hasDeposit ? 'inherit' : '#ef4444' }}>
-                                    At least 1 previous deposit required {hasDeposit && '✅'}
+                            <div style={{ display: 'flex', gap: 12, color: '#334155', fontSize: 14, alignItems: 'center' }}>
+                                <div style={{ minWidth: 24, height: 24, borderRadius: 12, background: hasDeposit ? '#dcfce7' : '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: hasDeposit ? '#16a34a' : '#dc2626' }}>{hasDeposit ? '✓' : '!'}</div>
+                                <span style={{ color: hasDeposit ? '#334155' : '#ef4444', fontWeight: hasDeposit ? 400 : 500 }}>
+                                    At least 1 previous deposit
                                 </span>
                             </div>
-                            <div style={{ display: 'flex', gap: 10, color: '#334155', fontSize: 14 }}>
-                                <span>🏆</span>
-                                <span style={{ color: stats.gamesWon >= 2 ? 'inherit' : '#ef4444' }}>
-                                    At least 2 game wins required {stats.gamesWon >= 2 ? '✅' : `(${stats.gamesWon}/2)`}
+                            <div style={{ display: 'flex', gap: 12, color: '#334155', fontSize: 14, alignItems: 'center' }}>
+                                <div style={{ minWidth: 24, height: 24, borderRadius: 12, background: stats.gamesWon >= 2 ? '#dcfce7' : '#fee2e2', display: 'flex', alignItems: 'center', justifyContent: 'center', color: stats.gamesWon >= 2 ? '#16a34a' : '#dc2626' }}>{stats.gamesWon >= 2 ? '✓' : '!'}</div>
+                                <span style={{ color: stats.gamesWon >= 2 ? '#334155' : '#ef4444', fontWeight: stats.gamesWon >= 2 ? 400 : 500 }}>
+                                    At least 2 game wins {stats.gamesWon < 2 && `(${stats.gamesWon}/2)`}
                                 </span>
                             </div>
                         </div>
                     </div>
 
                     {/* Bottom Section: Inputs */}
-                    <div style={{ flex: 1, background: 'linear-gradient(180deg, #818cf8 0%, #6366f1 100%)', padding: '32px 20px 40px', color: '#fff' }}>
-                        <h2 style={{ textAlign: 'center', margin: '0 0 8px 0', fontWeight: 500, fontSize: 24 }}>Withdraw Funds</h2>
-                        <p style={{ textAlign: 'center', fontSize: 15, opacity: 0.9, marginBottom: 28 }}>
-                            Available Balance: {balance.toFixed(0)} Birr
-                        </p>
-
-                        {/* Toggle */}
-                        <div style={{ display: 'flex', marginBottom: 20 }}>
-                            <div style={{ background: 'linear-gradient(90deg, #c084fc, #38bdf8)', padding: '10px 24px', borderRadius: '4px 4px 0 0', fontWeight: 600, fontSize: 14, boxShadow: '0 -2px 10px rgba(0,0,0,0.1)' }}>
-                                MANUAL
-                            </div>
-                            <div style={{ borderBottom: '1px solid rgba(255,255,255,0.2)', flex: 1 }}></div>
+                    <div style={{ flex: 1, padding: '32px 20px 100px', color: '#0f172a' }}>
+                        <h2 style={{ textAlign: 'center', margin: '0 0 8px 0', fontWeight: 700, fontSize: 24, color: '#0f172a' }}>Withdraw Funds</h2>
+                        <div style={{ textAlign: 'center', padding: '12px', background: '#eff6ff', borderRadius: 12, marginBottom: 28, border: '1px solid #bfdbfe' }}>
+                            <p style={{ margin: 0, fontSize: 14, color: '#1e3a8a' }}>Play Wallet Balance</p>
+                            <p style={{ margin: '4px 0 0 0', fontSize: 24, fontWeight: 800, color: '#1d4ed8' }}>{playBalance.toFixed(0)} ETB</p>
                         </div>
 
                         {/* Amount Input */}
-                        <div style={{ marginBottom: 16 }}>
-                            <input
-                                type="number"
-                                placeholder="Amount (Birr)"
-                                value={amount}
-                                onChange={e => setAmount(e.target.value)}
-                                style={{ width: '100%', padding: '16px 20px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.3)', background: 'transparent', color: '#fff', fontSize: 16, outline: 'none' }}
-                                className="styled-placeholder"
-                            />
+                        <div style={{ marginBottom: 20 }}>
+                            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#64748b', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>Amount</label>
+                            <div style={{ position: 'relative' }}>
+                                <span style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: '#94a3b8', fontWeight: 600 }}>ETB</span>
+                                <input
+                                    type="number"
+                                    placeholder="0"
+                                    value={amount}
+                                    onChange={e => setAmount(e.target.value)}
+                                    style={{ width: '100%', padding: '16px 16px 16px 52px', borderRadius: 12, border: '2px solid #e2e8f0', background: '#ffffff', color: '#0f172a', fontSize: 18, fontWeight: 600, outline: 'none', transition: 'border-color 0.2s' }}
+                                    className="styled-light-input"
+                                />
+                            </div>
                         </div>
 
                         {/* Phone Input */}
-                        <div style={{ marginBottom: 24 }}>
-                            <div style={{ position: 'relative' }}>
-                                <div style={{ position: 'absolute', top: -10, left: 16, background: '#7175f3', padding: '0 4px', fontSize: 12, opacity: 0.9 }}>
-                                    Phone Number (Optional)
-                                </div>
-                                <input
-                                    type="tel"
-                                    placeholder="+251709344446"
-                                    value={phone}
-                                    onChange={e => setPhone(e.target.value)}
-                                    style={{ width: '100%', padding: '18px 20px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.3)', background: 'transparent', color: '#fff', fontSize: 16, outline: 'none' }}
-                                    className="styled-placeholder"
-                                />
-                            </div>
-                            <div style={{ fontSize: 12, opacity: 0.7, marginTop: 8 }}>Use 09..., 07..., or +251... format</div>
+                        <div style={{ marginBottom: 28 }}>
+                            <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#64748b', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>Phone Number</label>
+                            <input
+                                type="tel"
+                                placeholder="+251 7..."
+                                value={phone}
+                                onChange={e => setPhone(e.target.value)}
+                                style={{ width: '100%', padding: '16px 20px', borderRadius: 12, border: '2px solid #e2e8f0', background: '#ffffff', color: '#0f172a', fontSize: 16, outline: 'none', transition: 'border-color 0.2s' }}
+                                className="styled-light-input"
+                            />
                         </div>
 
                         {/* Bank Selectors */}
+                        <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#64748b', marginBottom: 8, textTransform: 'uppercase', letterSpacing: 0.5 }}>Select Bank</label>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32 }}>
                             {/* CBE */}
                             <div
                                 onClick={() => setWithdrawMethod('cbe')}
-                                style={{ background: '#fff', borderRadius: 8, padding: '16px 20px', display: 'flex', alignItems: 'center', cursor: 'pointer', border: withdrawMethod === 'cbe' ? '2px solid #38bdf8' : '2px solid transparent', transition: 'all 0.2s', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}
+                                style={{ background: withdrawMethod === 'cbe' ? '#eff6ff' : '#ffffff', borderRadius: 12, padding: '16px', display: 'flex', alignItems: 'center', cursor: 'pointer', border: withdrawMethod === 'cbe' ? '2px solid #2563eb' : '2px solid #e2e8f0', transition: 'all 0.2s' }}
                             >
-                                <span style={{ fontSize: 24, marginRight: 16, color: '#f59e0b' }}>⭐</span>
+                                <div style={{ width: 44, height: 44, borderRadius: 10, background: '#f59e0b', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: 12, marginRight: 16 }}>CBE</div>
                                 <div style={{ flex: 1 }}>
-                                    <div style={{ color: '#111827', fontWeight: 700, fontSize: 16, marginBottom: 2 }}>CBE Birr</div>
-                                    <div style={{ color: '#10b981', fontSize: 13 }}>Better Transaction Fee</div>
+                                    <div style={{ color: '#0f172a', fontWeight: 700, fontSize: 16, marginBottom: 2 }}>CBE Birr</div>
+                                    <div style={{ color: '#64748b', fontSize: 13 }}>Commercial Bank of Ethiopia</div>
                                 </div>
-                                <div style={{ color: '#64748b', fontSize: 13 }}>select to transfer</div>
+                                <div style={{ width: 24, height: 24, borderRadius: 12, border: withdrawMethod === 'cbe' ? '7px solid #2563eb' : '2px solid #cbd5e1', background: '#fff' }}></div>
                             </div>
 
                             {/* Telebirr */}
                             <div
                                 onClick={() => setWithdrawMethod('telebirr')}
-                                style={{ background: '#fff', borderRadius: 8, padding: '16px 20px', display: 'flex', alignItems: 'center', cursor: 'pointer', border: withdrawMethod === 'telebirr' ? '2px solid #38bdf8' : '2px solid transparent', transition: 'all 0.2s', boxShadow: '0 4px 6px rgba(0,0,0,0.05)' }}
+                                style={{ background: withdrawMethod === 'telebirr' ? '#eff6ff' : '#ffffff', borderRadius: 12, padding: '16px', display: 'flex', alignItems: 'center', cursor: 'pointer', border: withdrawMethod === 'telebirr' ? '2px solid #2563eb' : '2px solid #e2e8f0', transition: 'all 0.2s' }}
                             >
-                                <span style={{ fontSize: 24, marginRight: 16, color: '#f59e0b' }}>⭐</span>
+                                <div style={{ width: 44, height: 44, borderRadius: 10, background: '#10b981', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 'bold', fontSize: 20, marginRight: 16 }}>+</div>
                                 <div style={{ flex: 1 }}>
-                                    <div style={{ color: '#111827', fontWeight: 700, fontSize: 16, marginBottom: 2 }}>Telebirr</div>
-                                    <div style={{ color: '#10b981', fontSize: 13 }}>Better Transaction Fee</div>
+                                    <div style={{ color: '#0f172a', fontWeight: 700, fontSize: 16, marginBottom: 2 }}>Telebirr</div>
+                                    <div style={{ color: '#64748b', fontSize: 13 }}>Ethio Telecom</div>
                                 </div>
-                                <div style={{ color: '#64748b', fontSize: 13 }}>select to transfer</div>
+                                <div style={{ width: 24, height: 24, borderRadius: 12, border: withdrawMethod === 'telebirr' ? '7px solid #2563eb' : '2px solid #cbd5e1', background: '#fff' }}></div>
                             </div>
                         </div>
 
                         {/* Dynamic Message inside Modal */}
                         {message && (
-                            <div style={{ background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', borderRadius: 8, padding: '12px', color: '#fecaca', textAlign: 'center', marginBottom: 20, fontSize: 14 }}>
-                                {message}
+                            <div style={{ background: '#fef2f2', border: '1px solid #fecaca', borderRadius: 12, padding: '16px', color: '#dc2626', textAlign: 'center', marginBottom: 24, fontSize: 14, fontWeight: 500 }}>
+                                🚨 {message}
                             </div>
                         )}
 
                         <button
                             onClick={handleWithdraw}
-                            style={{ width: '100%', padding: '18px', background: 'linear-gradient(90deg, #c084fc, #06b6d4)', border: 'none', borderRadius: 8, color: '#fff', fontWeight: 700, fontSize: 16, textTransform: 'uppercase', letterSpacing: 1, cursor: 'pointer', boxShadow: '0 4px 15px rgba(0,0,0,0.2)' }}
+                            style={{ width: '100%', padding: '18px', background: '#2563eb', border: 'none', borderRadius: 12, color: '#ffffff', fontWeight: 700, fontSize: 16, cursor: 'pointer', boxShadow: '0 4px 14px rgba(37, 99, 235, 0.3)', transition: 'background 0.2s' }}
                         >
-                            PROCEED TO WITHDRAW
+                            Request Withdrawal
                         </button>
                     </div>
 
-                    {/* Add a style definition for placeholder text colors inside the modal */}
                     <style dangerouslySetInnerHTML={{
                         __html: `
-                        .styled-placeholder::placeholder {
-                            color: rgba(255, 255, 255, 0.5);
-                        }
+                        .styled-light-input:focus { border-color: #2563eb !important; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1); }
+                        .styled-light-input::placeholder { color: #94a3b8; }
                     `}} />
                 </div>
             )}
