@@ -11,6 +11,8 @@ const walletRouter = require('./routes/wallet');
 const usersRouter = require('./routes/users');
 const adminRouter = require('./routes/admin');
 const { setIO } = require('./services/gameEngine');
+const { connectRedis } = require('./lib/redis');
+const { refreshSettingsCache } = require('./services/settingsCache');
 
 const app = express();
 const server = http.createServer(app);
@@ -34,8 +36,47 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ limit: '10mb', extended: true }));
 
 // Health check
-app.get('/api/health', (req, res) => {
-    res.json({ status: 'ok', service: 'bingo-son-api' });
+app.get('/api/health', async (req, res) => {
+    const { isRedisConnected, getRedisClient } = require('./lib/redis');
+
+    let redisStatus = 'disconnected';
+    let redisLatency = null;
+
+    if (isRedisConnected()) {
+        try {
+            const start = Date.now();
+            await getRedisClient().ping();
+            redisLatency = Date.now() - start;
+            redisStatus = 'connected';
+        } catch (err) {
+            redisStatus = 'error';
+        }
+    }
+
+    let dbStatus = 'disconnected';
+    let dbLatency = null;
+    try {
+        const start = Date.now();
+        await prisma.$queryRaw`SELECT 1`;
+        dbLatency = Date.now() - start;
+        dbStatus = 'connected';
+    } catch (err) {
+        dbStatus = 'error';
+    }
+
+    res.json({
+        status: 'ok',
+        service: 'bingo-son-api',
+        uptime: Math.floor(process.uptime()),
+        redis: {
+            status: redisStatus,
+            latency: redisLatency,
+        },
+        database: {
+            status: dbStatus,
+            latency: dbLatency,
+        }
+    });
 });
 
 // Make io accessible via req inside routes if needed
@@ -113,10 +154,24 @@ app.use((err, req, res, next) => {
     res.status(500).json({ error: 'Internal server error' });
 });
 
-server.listen(PORT, () => {
-    console.log(`🎮 Bingo Son API running on http://localhost:${PORT}`);
-    console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
-    console.log(`🔌 Socket.io enabled for games + /admin`);
-});
+// --- Initialize Redis + Settings Cache, then start server ---
+(async () => {
+    // Try to connect Redis (non-fatal if it fails)
+    const redisOk = await connectRedis();
+    if (redisOk) {
+        console.log('📦 Redis connected — using Redis-backed settings cache');
+    } else {
+        console.log('📦 Redis unavailable — using in-memory settings cache');
+    }
+
+    // Pre-warm settings cache from DB
+    await refreshSettingsCache();
+
+    server.listen(PORT, () => {
+        console.log(`🎮 Bingo Son API running on http://localhost:${PORT}`);
+        console.log(`📊 Health check: http://localhost:${PORT}/api/health`);
+        console.log(`🔌 Socket.io enabled for games + /admin`);
+    });
+})();
 
 module.exports = { app, server, io };

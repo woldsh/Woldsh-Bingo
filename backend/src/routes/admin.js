@@ -1,16 +1,12 @@
 const express = require('express');
 const jwt = require('jsonwebtoken');
 const { adminAuthMiddleware, requireSuperAdmin, JWT_SECRET } = require('../middleware/adminAuth');
-const Redis = require('ioredis');
 const prisma = require('../lib/prisma');
 const fs = require('fs');
 const path = require('path');
 const { refreshSettingsCache } = require('../services/settingsCache');
 
 const router = express.Router();
-
-// Optional: Redis client for settings cache
-const redisClient = process.env.REDIS_URL ? new Redis(process.env.REDIS_URL) : null;
 
 // Add global BigInt serialization support for JSON
 BigInt.prototype.toJSON = function () {
