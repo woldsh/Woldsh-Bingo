@@ -35,7 +35,7 @@ export default function WalletPage() {
             ]);
             setBalance(balData.balance);
             setPlayBalance(userRes.user?.playBalance || 0);
-            setTransactions(txData.transactions || []);
+            setTransactions((txData.transactions || []).slice(0, 5));
 
             // Extract requirements info
             setPhone(userRes.user?.phone || '');

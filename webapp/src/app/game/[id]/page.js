@@ -492,22 +492,22 @@ export default function GamePage() {
                     </div>
                 </div>
 
-                <div style={{ 
-                    display: 'flex', 
-                    alignItems: 'center', 
-                    gap: '4px', 
-                    padding: '8px 10px', 
-                    backgroundColor: '#0f172a', 
+                <div style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '8px 10px',
+                    backgroundColor: '#0f172a',
                     borderBottom: '1px solid #1e293b',
                     overflow: 'hidden'
                 }}>
                     <button
                         onClick={() => router.push('/')}
-                        style={{ 
-                            background: 'rgba(255,255,255,0.05)', 
-                            border: '1px solid rgba(255,255,255,0.1)', 
-                            color: '#94a3b8', 
-                            fontSize: '20px', 
+                        style={{
+                            background: 'rgba(255,255,255,0.05)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            color: '#94a3b8',
+                            fontSize: '20px',
                             borderRadius: '10px',
                             width: '36px',
                             height: '36px',
@@ -528,7 +528,7 @@ export default function GamePage() {
 
                     <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '4px 2px', backgroundColor: '#422e11', border: '1px solid #713f12', borderRadius: '8px', minWidth: 0 }}>
                         <span style={{ fontSize: '8px', color: '#f59e0b', fontWeight: '800', textTransform: 'uppercase', whiteSpace: 'nowrap' }}>Bet</span>
-                        <span style={{ fontSize: '12px', color: '#fbbf24', fontWeight: '900', whiteSpace: 'nowrap', overflow: 'hidden' }}>{stake}<span style={{fontSize: '8px'}}> ETB</span></span>
+                        <span style={{ fontSize: '12px', color: '#fbbf24', fontWeight: '900', whiteSpace: 'nowrap', overflow: 'hidden' }}>{stake}<span style={{ fontSize: '8px' }}> ETB</span></span>
                     </div>
 
                     <div style={{ flex: 1.1, display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '4px 2px', backgroundColor: '#064e3b', border: '1px solid #065f46', borderRadius: '8px', minWidth: 0 }}>

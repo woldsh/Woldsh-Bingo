@@ -232,15 +232,33 @@ router.post('/withdraw', authMiddleware, async (req, res) => {
 });
 
 /**
- * GET /api/wallet/transactions - Get transaction history
+ * GET /api/wallet/transactions - Get transaction history (max 5, older ones auto-deleted)
  */
 router.get('/transactions', authMiddleware, async (req, res) => {
     try {
+        // Get the latest 5 deposit/withdraw transactions
         const transactions = await prisma.transaction.findMany({
-            where: { userId: req.user.id },
+            where: {
+                userId: req.user.id,
+                type: { in: ['deposit', 'withdraw'] },
+            },
             orderBy: { createdAt: 'desc' },
-            take: 50,
+            take: 5,
         });
+
+        // Delete older transactions beyond the latest 5 (cleanup)
+        if (transactions.length === 5) {
+            const oldestKeptDate = transactions[transactions.length - 1].createdAt;
+            await prisma.transaction.deleteMany({
+                where: {
+                    userId: req.user.id,
+                    type: { in: ['deposit', 'withdraw'] },
+                    createdAt: { lt: oldestKeptDate },
+                    // Only delete completed/rejected ones, keep pending
+                    status: { in: ['completed', 'rejected'] },
+                }
+            });
+        }
 
         res.json({
             transactions: transactions.map(t => ({

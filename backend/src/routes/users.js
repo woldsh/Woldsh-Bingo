@@ -75,7 +75,7 @@ router.get('/history', authMiddleware, async (req, res) => {
                 }
             },
             orderBy: { joinedAt: 'desc' },
-            take: 50,
+            take: 5,
         });
 
         res.json({
