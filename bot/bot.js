@@ -55,13 +55,11 @@ const internalServer = http.createServer((req, res) => {
                         if (photoToSend) {
                             await bot.sendPhoto(chatId, photoToSend, {
                                 caption: finalCaption,
-                                parse_mode: 'Markdown',
-                                reply_markup: keyboard
+                                parse_mode: 'Markdown'
                             }, fileOptions);
                         } else if (finalCaption) {
                             await bot.sendMessage(chatId, finalCaption, {
-                                parse_mode: 'Markdown',
-                                reply_markup: keyboard
+                                parse_mode: 'Markdown'
                             });
                         }
                     } catch (err) {

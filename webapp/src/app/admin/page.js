@@ -61,13 +61,16 @@ export default function AdminDashboardPage() {
     }
 
     const statCards = stats ? [
-        { label: 'TOTAL PLAYERS', value: stats.totalPlayers, sub: `${stats.playersToday} joined today`, icon: <Users size={24} />, color: '#8b5cf6' },
-        { label: 'ACTIVE GAMES', value: stats.activeGames, sub: `${stats.totalGames} total games`, icon: <Gamepad2 size={24} />, color: '#f59e0b' },
-        { label: 'PENDING DEPOSITS', value: stats.pendingDeposits, sub: 'Awaiting review', icon: <ArrowDownToLine size={24} />, color: '#3b82f6' },
-        { label: 'PENDING WITHDRAWALS', value: stats.pendingWithdrawals, sub: 'Awaiting approval', icon: <ArrowUpFromLine size={24} />, color: '#ec4899' },
-        { label: 'TOTAL DEPOSITED', value: `${Number(stats.totalDeposited).toFixed(2)} ETB`, sub: `${stats.approvedDepositsCount} approved deposits`, icon: <CreditCard size={24} />, color: '#10b981' },
-        { label: 'TOTAL WITHDRAWN', value: `${Number(stats.totalWithdrawn).toFixed(2)} ETB`, sub: `${stats.approvedWithdrawalsCount} approved withdrawals`, icon: <TrendingDown size={24} />, color: '#ef4444' },
-        { label: 'BANNED PLAYERS', value: stats.bannedPlayers, sub: `Out of ${stats.totalPlayers} total`, icon: <Ban size={24} />, color: '#ef4444' },
+        { label: 'NET GGR (PROFIT)', value: `${Number(stats.netGGR || 0).toFixed(2)} ETB`, sub: 'Gross Gaming Revenue', icon: <TrendingDown size={24} style={{ transform: 'rotate(180deg)' }} />, color: '#10b981' },
+        { label: 'GROSS GAMING VOLUME', value: `${Number(stats.grossGamingVolume || 0).toFixed(2)} ETB`, sub: 'Total money bet', icon: <Gamepad2 size={24} />, color: '#8b5cf6' },
+        { label: 'PLAYER PAYOUTS', value: `${Number(stats.playerPayouts || 0).toFixed(2)} ETB`, sub: 'Total winnings paid out', icon: <ArrowUpFromLine size={24} />, color: '#f59e0b' },
+        { label: 'TOTAL PLAYERS', value: stats.totalPlayers || 0, sub: `${stats.playersToday || 0} joined today`, icon: <Users size={24} />, color: '#8b5cf6' },
+        { label: 'ACTIVE GAMES', value: stats.activeGames || 0, sub: `${stats.totalGames || 0} total games`, icon: <Gamepad2 size={24} />, color: '#f59e0b' },
+        { label: 'TOTAL DEPOSITED', value: `${Number(stats.totalDeposited || 0).toFixed(2)} ETB`, sub: `${stats.approvedDepositsCount || 0} approved deposits`, icon: <CreditCard size={24} />, color: '#10b981' },
+        { label: 'TOTAL WITHDRAWN', value: `${Number(stats.totalWithdrawn || 0).toFixed(2)} ETB`, sub: `${stats.approvedWithdrawalsCount || 0} approved withdrawals`, icon: <TrendingDown size={24} />, color: '#ef4444' },
+        { label: 'PENDING DEPOSITS', value: stats.pendingDeposits || 0, sub: 'Awaiting review', icon: <ArrowDownToLine size={24} />, color: '#3b82f6' },
+        { label: 'PENDING WITHDRAWALS', value: stats.pendingWithdrawals || 0, sub: 'Awaiting approval', icon: <ArrowUpFromLine size={24} />, color: '#ec4899' },
+        { label: 'BANNED PLAYERS', value: stats.bannedPlayers || 0, sub: `Out of ${stats.totalPlayers || 0} total`, icon: <Ban size={24} />, color: '#ef4444' },
     ] : [];
 
     const typeColors = {

@@ -56,10 +56,10 @@ export const gamesApi = {
 // Wallet API
 export const walletApi = {
     balance: () => apiCall('/api/wallet/balance'),
-    deposit: (amount, reference) =>
+    deposit: (amount, reference, screenshotBase64) =>
         apiCall('/api/wallet/deposit', {
             method: 'POST',
-            body: JSON.stringify({ amount, reference }),
+            body: JSON.stringify({ amount, reference, screenshotBase64 }),
         }),
     withdraw: (amount, phone) =>
         apiCall('/api/wallet/withdraw', {
@@ -84,10 +84,10 @@ export const adminApi = {
             method: 'PUT',
             body: JSON.stringify(data),
         }),
-    adjustWallet: (id, amount, note) =>
+    adjustWallet: (id, amount, note, walletType = 'main') =>
         apiCall(`/api/admin/players/${id}/adjust-wallet`, {
             method: 'POST',
-            body: JSON.stringify({ amount, note }),
+            body: JSON.stringify({ amount, note, walletType }),
         }),
     deletePlayer: (id) =>
         apiCall(`/api/admin/players/${id}`, { method: 'DELETE' }),

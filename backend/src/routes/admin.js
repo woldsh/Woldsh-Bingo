@@ -56,6 +56,8 @@ router.get('/dashboard', adminAuthMiddleware, async (req, res) => {
             totalWithdrawn,
             transactions,
             bannedPlayers,
+            totalBetsAgg,
+            totalWinsAgg,
         ] = await Promise.all([
             prisma.user.count(),
             prisma.user.count({
@@ -100,7 +102,21 @@ router.get('/dashboard', adminAuthMiddleware, async (req, res) => {
                 include: { user: { select: { username: true, firstName: true } } }
             }),
             prisma.user.count({ where: { status: 'banned' } }),
+            prisma.transaction.aggregate({
+                where: { type: 'bet', status: 'completed' },
+                _sum: { amount: true },
+                _count: true
+            }),
+            prisma.transaction.aggregate({
+                where: { type: 'win', status: 'completed' },
+                _sum: { amount: true },
+                _count: true
+            }),
         ]);
+
+        const grossGamingVolume = totalBetsAgg?._sum?.amount || 0;
+        const playerPayouts = totalWinsAgg?._sum?.amount || 0;
+        const netGGR = grossGamingVolume - playerPayouts;
 
         res.json({
             stats: {
@@ -115,6 +131,9 @@ router.get('/dashboard', adminAuthMiddleware, async (req, res) => {
                 totalWithdrawn: totalWithdrawn?._sum?.amount || 0,
                 approvedWithdrawalsCount: totalWithdrawn?._count || 0,
                 bannedPlayers,
+                grossGamingVolume,
+                playerPayouts,
+                netGGR
             },
             recentTransactions: transactions.map(tx => ({
                 id: tx.id,
@@ -254,9 +273,10 @@ router.post('/players/:id/ban', adminAuthMiddleware, requireSuperAdmin, async (r
 router.post('/players/:id/adjust-wallet', adminAuthMiddleware, requireSuperAdmin, async (req, res) => {
     try {
         const { id } = req.params;
-        const { amount, note } = req.body;
+        const { amount, note, walletType } = req.body;
         const adminId = req.admin.id;
 
+        const isPlay = walletType === 'play';
         const adjAmount = parseFloat(amount);
         if (isNaN(adjAmount) || adjAmount === 0) {
             return res.status(400).json({ error: 'Valid non-zero amount required' });
@@ -268,19 +288,24 @@ router.post('/players/:id/adjust-wallet', adminAuthMiddleware, requireSuperAdmin
         }
 
         // Prevent negative balance
-        if (adjAmount < 0 && player.balance.toNumber() + adjAmount < 0) {
-            return res.status(400).json({ error: 'Insufficient funds for this debit' });
+        if (adjAmount < 0) {
+            if (isPlay && player.giftBalance.toNumber() + adjAmount < 0) {
+                return res.status(400).json({ error: 'Insufficient funds in Play Wallet for this debit' });
+            }
+            if (!isPlay && player.balance.toNumber() + adjAmount < 0) {
+                return res.status(400).json({ error: 'Insufficient funds in Main Wallet for this debit' });
+            }
         }
 
         const adminUser = await prisma.admin.findUnique({ where: { id: adminId } });
 
         // Update balance and log transaction atomically
         const result = await prisma.$transaction(async (tx) => {
+            const updateData = isPlay ? { giftBalance: { increment: adjAmount } } : { balance: { increment: adjAmount } };
+            
             const updated = await tx.user.update({
                 where: { id: parseInt(id) },
-                data: {
-                    balance: { increment: adjAmount }
-                }
+                data: updateData
             });
 
             const transaction = await tx.transaction.create({
@@ -289,8 +314,8 @@ router.post('/players/:id/adjust-wallet', adminAuthMiddleware, requireSuperAdmin
                     type: 'adjust_wallet',
                     amount: adjAmount,
                     status: 'completed',
-                    reference: `admin_${adminId}_${Date.now()}`,
-                    note: `Admin(${adminUser?.username || 'System'}): ${note || 'Manual adjustment'}`
+                    reference: `admin_${adminId}_${isPlay ? 'play' : 'main'}_${Date.now()}`,
+                    note: `Admin(${adminUser?.username || 'System'}): ${note || 'Manual adjustment'} [${isPlay ? 'Play Wallet' : 'Main Wallet'}]`
                 }
             });
 
@@ -299,11 +324,11 @@ router.post('/players/:id/adjust-wallet', adminAuthMiddleware, requireSuperAdmin
                 await tx.auditLog.create({
                     data: {
                         adminId,
-                        action: 'ADJUST_WALLET',
+                        action: isPlay ? 'ADJUST_PLAY_WALLET' : 'ADJUST_WALLET',
                         targetId: id.toString(),
                         targetType: 'user',
-                        beforeData: JSON.stringify({ balance: player.balance }),
-                        afterData: JSON.stringify({ balance: updated.balance, amount: adjAmount }),
+                        beforeData: JSON.stringify({ balance: isPlay ? player.giftBalance : player.balance }),
+                        afterData: JSON.stringify({ balance: isPlay ? updated.giftBalance : updated.balance, amount: adjAmount }),
                         reason: note
                     }
                 });
